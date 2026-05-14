@@ -183,9 +183,15 @@ export async function POST(req: NextRequest) {
 
     
     if (response.status >= 400) {
+      let customError = `API returned error status ${response.status}`;
+      
+      if (response.status === 403 || response.status === 401) {
+        customError = `🔑 Authorization Failed (HTTP ${response.status}): Please check and configure your API Keys/Credentials in this Node's settings parameters.`;
+      }
+
       return NextResponse.json({
         success: false,
-        error: `API returned error status ${response.status}`,
+        error: customError,
         data: response.data,
         status: response.status
       });

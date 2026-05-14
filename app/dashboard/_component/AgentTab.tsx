@@ -1,6 +1,7 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Myagents from "./Myagents";
+import TemplateGallery from "./TemplateGallery";
 
 function AgentTab() {
   return (
@@ -13,7 +14,9 @@ function AgentTab() {
         <TabsContent value="agent">
           <Myagents/>
         </TabsContent>
-        <TabsContent value="template">A ready to use template.</TabsContent>
+        <TabsContent value="template">
+          <TemplateGallery />
+        </TabsContent>
       </Tabs>
     </div>
   );

@@ -42,26 +42,49 @@ export async function POST(req: NextRequest) {
         fullInstruction += `Parameters: ${JSON.stringify(tool.parameters)}\n`;
         fullInstruction += `---\n`;
       });
-      
-      fullInstruction += '\n\n=== IMPORTANT INSTRUCTIONS ===\n';
-      fullInstruction += 'When you need to use a tool, respond with ONLY this JSON format (no other text):\n';
+      fullInstruction += '\n\n=== IMPORTANT INSTRUCTIONS (READ CAREFULLY) ===\n';
+      fullInstruction += 'CRITICAL BEHAVIOR RULES:\n';
+      fullInstruction += '1. YOU ARE NOT A GENERIC CHATBOT. You are the Execution Gate for an active workflow node graph.\n';
+      fullInstruction += '2. DO NOT SAY "Give me a moment to process", "Wait while I do this", or make polite stalling statements. You cannot "wait" or run code in the background!\n';
+      fullInstruction += '3. IF THE USER ASKS FOR ANY ACTION (fetch, analyze, email, export, tailor, optimize) WHICH A TOOL BELOW CAN PROVIDE, YOU MUST IMMEDIATELY AND EXCLUSIVELY RESPOND WITH THE JSON TOOL BLOCK.\n';
+      fullInstruction += '4. You MUST output ONLY raw JSON, with absolutely no conversational pre-text, no markdown enclosures, and no concluding remarks.\n\n';
+      fullInstruction += 'JSON EXECUTION FORMAT:\n';
       fullInstruction += '{\n';
       fullInstruction += '  "useTool": true,\n';
       fullInstruction += '  "toolId": "exact-tool-id-from-above",\n';
       fullInstruction += '  "parameters": {"paramName": "value"},\n';
       fullInstruction += '  "reasoning": "why you need this tool"\n';
       fullInstruction += '}\n\n';
-      fullInstruction += 'CRITICAL: Use the exact Tool ID, not the Tool Name!\n';
-      fullInstruction += 'CRITICAL: Match parameter names exactly as specified!\n\n';
+      fullInstruction += 'CRITICAL: Use the exact Tool ID. Match the required parameters explicitly.\n\n';
     }
 
-    fullInstruction += '\nIf you don\'t need a tool, respond naturally to help the user.\n';
+    fullInstruction += '\nIf the user is only greeting you or asking a generic conceptual question where no action/tool is relevant, only then respond naturally to assist them.\n';
 
     console.log(' Full instruction:', fullInstruction);
 
-    const result = await chat.sendMessage(fullInstruction + '\n\nUser message: ' + message);
-    const response = await result.response;
-    let agentResponse = response.text();
+    let agentResponse = "";
+    try {
+      const result = await chat.sendMessage(fullInstruction + '\n\nUser message: ' + message);
+      const response = await result.response;
+      agentResponse = response.text();
+    } catch (geminiError: any) {
+      console.error('⚠️ Upstream Gemini Error:', geminiError);
+      
+      // Handle specific safety blocks or missing text
+      if (geminiError.message?.includes('SAFETY') || geminiError.message?.includes('blocked')) {
+        return NextResponse.json({
+          response: "🔒 Upstream Security Alert: The AI model's content safety filter was triggered. Please rephrase your prompt to comply with safety policies.",
+          toolResult: null,
+          timestamp: Date.now()
+        });
+      }
+
+      return NextResponse.json({
+        response: `🛑 Gemini AI Orchestration Failed: ${geminiError.message || 'Unknown model response error.'}. Please verify your workspace limits and prompt structure.`,
+        toolResult: null,
+        timestamp: Date.now()
+      });
+    }
 
     console.log(' Raw agent response:', agentResponse);
 
@@ -137,12 +160,17 @@ export async function POST(req: NextRequest) {
                 agentResponse = `I cannot proceed because the condition is not met: ${conditionMessage}`;
               } else {
                
-                const finalResult = await chat.sendMessage(
-                  `The tool "${tool.name}" returned this data: ${JSON.stringify(toolResult.data, null, 2)}.\n\nPlease provide a helpful, natural language response to the user based on this data. Format it in a friendly, conversational way and include all relevant details from the response.`
-                );
-                const finalResponse = await finalResult.response;
-                agentResponse = finalResponse.text();
-                console.log('Final formatted response:', agentResponse);
+                try {
+                  const finalResult = await chat.sendMessage(
+                    `The tool "${tool.name}" returned this data: ${JSON.stringify(toolResult.data, null, 2)}.\n\nPlease provide a helpful, natural language response to the user based on this data. Format it in a friendly, conversational way and include all relevant details from the response.`
+                  );
+                  const finalResponse = await finalResult.response;
+                  agentResponse = finalResponse.text();
+                  console.log('Final formatted response:', agentResponse);
+                } catch (finalError: any) {
+                  console.error('⚠️ Gemini formatting failed, fallback to raw output:', finalError);
+                  agentResponse = `🤖 Visual Workflow executed successfully!\n\n📊 **Raw Node Output:**\n\`\`\`json\n${JSON.stringify(toolResult.data, null, 2)}\n\`\`\``;
+                }
               }
             }
           } catch (toolError: any) {

@@ -1,10 +1,15 @@
 'use client'
 import { Button } from '@/components/ui/button'
 import { Agent } from '@/types/AgentType'
-import { ChevronLeft, Code2, Play, X } from 'lucide-react'
+import { ChevronLeft, Code2, Play, X, Trash2, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import React, { useState } from 'react'
 import CodeDialog from './CodeDialog'
+import { useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { Id } from '@/convex/_generated/dataModel'
 
 type Props = {
   agentDetails: Agent | undefined,
@@ -13,6 +18,30 @@ type Props = {
 
 function Header({ agentDetails, previewHeader = false }: Props) {
   const [isCodeDialogOpen, setIsCodeDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const DeleteMutation = useMutation(api.agent.DeleteAgent)
+  const router = useRouter()
+
+  const handleDeleteAgent = async () => {
+    if (!agentDetails?._id) return;
+
+    const name = agentDetails?.name || "Untitled Workspace";
+    if (!confirm(`Are you absolutely sure you want to delete "${name}"? This action is permanent and cannot be undone.`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await DeleteMutation({ id: agentDetails._id as Id<"AgentTable"> });
+      toast.success(`Workspace "${name}" successfully deleted.`);
+      // Fast redirect to dashboard
+      router.push('/dashboard');
+    } catch (error) {
+      console.error("Deletion failed:", error);
+      toast.error("Critical: Failed to purge workspace.");
+      setIsDeleting(false);
+    }
+  }
 
   return (
     <>
@@ -22,7 +51,7 @@ function Header({ agentDetails, previewHeader = false }: Props) {
             <ChevronLeft className="h-6 w-6" />
           </Link>
           <div>
-            <h2 className="text-lg font-black tracking-wide bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            <h2 className="text-lg font-black tracking-wide bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent truncate max-w-[250px]">
               {agentDetails?.name || 'Untitled Workspace'}
             </h2>
             <span className="text-[10px] font-black font-mono text-[#00f2fe] uppercase tracking-widest opacity-80">
@@ -32,6 +61,22 @@ function Header({ agentDetails, previewHeader = false }: Props) {
         </div>
         
         <div className="flex items-center gap-4">
+          {/* New: Delete Workspace Action */}
+          <Button 
+            variant="ghost"
+            onClick={handleDeleteAgent}
+            disabled={isDeleting || !agentDetails}
+            className="bg-rose-950/20 border border-rose-500/20 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 font-bold uppercase tracking-wider text-xs h-10 px-4 rounded-lg transition-all"
+            title="Permanently Purge Workspace"
+          >
+            {isDeleting ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Trash2 className="h-4 w-4 mr-2" />
+            )}
+            Delete Agent
+          </Button>
+
           <Button 
             variant="outline"
             onClick={() => setIsCodeDialogOpen(true)}
@@ -74,4 +119,4 @@ function Header({ agentDetails, previewHeader = false }: Props) {
   )
 }
 
-export default Header
+export default Header

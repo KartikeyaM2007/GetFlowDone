@@ -41,7 +41,7 @@ export function AppSidebar() {
     userDetails?._id ? { userId: userDetails._id as Id<"UserTable"> } : "skip"
   );
   const agentCount = userAgents?.length || 0;
-  const isLimitReached = agentCount >= 2;
+  const isLimitReached = agentCount >= 20;
 
   return (
     <Sidebar collapsible="icon">
@@ -79,7 +79,7 @@ export function AppSidebar() {
                 <div className="flex flex-col">
                   <span className="text-xs text-muted-foreground">Remaining Credits</span>
                   <span className="text-sm font-bold">
-                     {Math.max(0, 2 - agentCount)} / 2 Free Plan
+                     {Math.max(0, 20 - agentCount)} / 20 Free Plan
                   </span>
                 </div>
               )}

@@ -2,7 +2,7 @@
 'use client'
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Send, Trash2, RotateCw } from 'lucide-react';
+import { Loader2, Send, Trash2, RotateCw, FileDown } from 'lucide-react';
 import axios from 'axios';
 import { useConvex, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -18,6 +18,22 @@ type Props = {
 
 
 function ChatUi({ agentDetails, onReloadAgent, isReloading = false }: Props) {
+  
+  const extractDownloadUrl = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const matches = text.match(urlRegex);
+    if (matches) {
+      return matches.find(url => 
+        url.toLowerCase().includes('.pdf') || 
+        url.toLowerCase().includes('download') || 
+        url.toLowerCase().includes('drive.google') ||
+        url.toLowerCase().includes('dropbox') ||
+        url.toLowerCase().includes('res.cloudinary') ||
+        url.toLowerCase().includes('drive.usercontent')
+      );
+    }
+    return null;
+  };
   const [messages, setMessages] = useState<Array<{role: string, content: string, timestamp: number}>>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -138,16 +154,18 @@ function ChatUi({ agentDetails, onReloadAgent, isReloading = false }: Props) {
 
   return (
     <>
-   
-      <div className='p-3 border-b bg-white flex items-center justify-between'>
+      {/* Sub-Header Actions Console */}
+      <div className='p-4 border-b border-white/5 bg-black/30 flex items-center justify-between backdrop-blur-sm relative z-20'>
         <div className='flex items-center gap-2'>
           {agentDetails?.agentToolConfig ? (
-            <span className='text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full font-medium'>
-              ● Ready
+            <span className='text-[10px] font-black font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full tracking-widest uppercase flex items-center gap-1.5 animate-pulse'>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]" />
+              Live Console
             </span>
           ) : (
-            <span className='text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full font-medium'>
-              ● Not Loaded
+            <span className='text-[10px] font-black font-mono text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full tracking-widest uppercase flex items-center gap-1.5'>
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+              Awaiting Config
             </span>
           )}
         </div>
@@ -156,89 +174,118 @@ function ChatUi({ agentDetails, onReloadAgent, isReloading = false }: Props) {
           size="sm" 
           onClick={onReloadAgent}
           disabled={isReloading}
-          className='h-8 text-xs'
+          className='h-8 text-[10px] font-black uppercase tracking-wider bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white border border-white/10'
         >
           <RotateCw className={`h-3.5 w-3.5 mr-1.5 ${isReloading ? 'animate-spin' : ''}`} />
-          {isReloading ? 'Loading...' : 'Reload'}
+          {isReloading ? 'Compiling...' : 'Re-Sync'}
         </Button>
       </div>
 
-    
-      <div className='flex-1 p-4 overflow-y-auto space-y-3'>
+      {/* Interactive Stream Container */}
+      <div className='flex-1 p-4 overflow-y-auto space-y-4 relative z-10 scrollbar-thin scrollbar-thumb-[#00f2fe]/10'>
         {messages.length === 0 ? (
-          <div className='text-center mt-10'>
-            <div className='w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3'>
-              <Send className='w-6 h-6 text-blue-600' />
+          <div className='h-full flex flex-col items-center justify-center text-center px-4 opacity-60 py-10'>
+            <div className='w-14 h-14 bg-[#00f2fe]/5 border-2 border-dashed border-[#00f2fe]/20 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse'>
+              <Send className='w-6 h-6 text-[#00f2fe]' />
             </div>
-            <p className='text-gray-500 text-sm'>Send a message to start testing</p>
+            <p className='text-white font-black text-sm uppercase tracking-wider mb-1'>Sandbox Active</p>
+            <p className='text-gray-500 text-[11px] leading-relaxed'>
+              Initialize testing by submitting natural language inputs in the prompt gateway below.
+            </p>
             {!agentDetails?.agentToolConfig && (
-              <p className='text-amber-500 text-sm mt-2'>⚠️ Please reload the agent first</p>
+              <p className='text-amber-400 font-mono font-bold text-[10px] mt-4 border border-amber-400/20 bg-amber-400/5 px-3 py-1.5 rounded-lg uppercase tracking-widest'>
+                ⚡ Requires Workspace Sync
+              </p>
             )}
           </div>
         ) : (
-          messages.map((msg, idx) => (
-            <div 
-              key={idx} 
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+          messages.map((msg, idx) => {
+            const downloadUrl = msg.role !== 'user' ? extractDownloadUrl(msg.content) : null;
+            return (
               <div 
-                className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                  msg.role === 'user' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-800'
-                }`}
+                key={idx} 
+                className={`flex w-full animate-in slide-in-from-bottom-2 duration-300 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <p className='text-sm whitespace-pre-wrap'>{msg.content}</p>
-                <p className='text-xs opacity-70 mt-1'>
-                  {new Date(msg.timestamp).toLocaleTimeString()}
-                </p>
+                <div 
+                  className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-lg relative group/msg ${
+                    msg.role === 'user' 
+                      ? 'bg-gradient-to-br from-[#00f2fe] to-[#4facfe] text-black font-extrabold rounded-tr-none shadow-[0_0_25px_rgba(0,242,254,0.2)]' 
+                      : 'bg-black/40 border border-white/10 text-white rounded-tl-none hover:border-[#00f2fe]/30 transition-all'
+                  }`}
+                >
+                  <p className='text-sm whitespace-pre-wrap font-medium leading-relaxed'>{msg.content}</p>
+                  
+                  {downloadUrl && (
+                    <a 
+                      href={downloadUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="mt-3 px-4 py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl flex items-center justify-between group/dl transition-all hover:bg-emerald-500/20 hover:border-emerald-500/50 no-underline block relative z-30 shadow-[0_0_15px_rgba(16,185,129,0.1)] animate-pulse cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center text-emerald-400 group-hover/dl:scale-110 transition-transform shrink-0">
+                          <FileDown className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col items-start text-left leading-tight">
+                          <span className="text-[10px] font-black font-mono uppercase tracking-wider text-emerald-300">Execute Download</span>
+                          <span className="text-[9px] text-emerald-500/70 mt-0.5 font-medium truncate max-w-[160px]">Save Tailored PDF</span>
+                        </div>
+                      </div>
+                      <span className="text-emerald-400 group-hover/dl:translate-x-1 transition-all font-bold">&rarr;</span>
+                    </a>
+                  )}
+
+                  <div className={`text-[9px] font-mono font-bold uppercase tracking-widest mt-2 opacity-60 text-right ${msg.role === 'user' ? 'text-black/70' : 'text-gray-400'}`}>
+                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
         
         {loading && (
-          <div className='flex justify-start'>
-            <div className='bg-gray-100 rounded-lg px-4 py-2'>
-              <div className='flex gap-1 items-center'>
-                <Loader2 className='w-4 h-4 animate-spin' />
-                <span className='text-sm text-gray-600'>Thinking...</span>
+          <div className='flex justify-start w-full animate-in fade-in'>
+            <div className='bg-black/30 border border-white/10 rounded-2xl rounded-tl-none px-4 py-3 shadow-md flex gap-3 items-center'>
+              <div className="flex space-x-1">
+                <div className="w-1.5 h-1.5 bg-[#00f2fe] rounded-full animate-bounce [animation-delay:-0.3s]" />
+                <div className="w-1.5 h-1.5 bg-[#00f2fe] rounded-full animate-bounce [animation-delay:-0.15s]" />
+                <div className="w-1.5 h-1.5 bg-[#00f2fe] rounded-full animate-bounce" />
               </div>
+              <span className='text-[10px] font-black font-mono text-[#00f2fe] uppercase tracking-widest'>Processing...</span>
             </div>
           </div>
         )}
       </div>
 
-
-      <div className='p-4 border-t bg-gray-50'>
+      {/* Prompt Input Gateway */}
+      <div className='p-4 border-t border-white/5 bg-black/40 relative z-20 backdrop-blur-md'>
         {messages.length > 0 && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <button 
             onClick={handleClearChat}
-            className='mb-2 w-full text-gray-600'
+            className='mb-3 w-full py-2 rounded-lg flex items-center justify-center gap-2 text-[10px] font-black font-mono uppercase tracking-widest text-rose-400 bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/10 hover:border-rose-500/30 transition-all cursor-pointer'
           >
-            <Trash2 className='h-4 w-4 mr-2' />
-            Clear Chat History
-          </Button>
+            <Trash2 className='h-3.5 w-3.5' />
+            Purge Sandbox Cache
+          </button>
         )}
-        <div className='flex gap-2'>
+        <div className='flex gap-3 relative items-center'>
           <input 
             type="text" 
-            placeholder={agentDetails?.agentToolConfig ? "Type a message..." : "Reload agent first..."}
+            placeholder={agentDetails?.agentToolConfig ? "Instruct Agent..." : "Compile runtime console..."}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-            className='flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed'
+            className='flex-1 px-4 py-3 bg-black/60 border border-white/10 rounded-xl text-white text-sm placeholder:text-gray-600 placeholder:text-xs font-medium tracking-wide focus:outline-none focus:border-[#00f2fe]/50 focus:ring-1 focus:ring-[#00f2fe]/20 disabled:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50 transition-all pr-12 shadow-inner'
             disabled={loading || !agentDetails?.agentToolConfig}
           />
-          <Button 
+          <button 
             onClick={sendMessage}
             disabled={!input.trim() || loading || !agentDetails?.agentToolConfig}
-            size="icon"
+            className='absolute right-2 top-2 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black p-2 rounded-lg transition-all duration-300 shadow-[0_0_15px_rgba(0,242,254,0.2)] hover:shadow-[0_0_25px_rgba(0,242,254,0.4)] hover:scale-105 disabled:opacity-40 disabled:scale-100 disabled:shadow-none cursor-pointer flex items-center justify-center h-8 w-8'
           >
-            {loading ? <Loader2 className='h-4 w-4 animate-spin' /> : <Send className='h-4 w-4' />}
-          </Button>
+            {loading ? <Loader2 className='h-4 w-4 animate-spin' /> : <Send className='h-4 w-4 font-black' />}
+          </button>
         </div>
       </div>
     </>

@@ -44,7 +44,7 @@ function CreateAgentSection() {
     const currentAgentCount = userAgents?.length || 0;
 
 
-    if (!hasPremiumAccess && currentAgentCount >= 2) {
+    if (!hasPremiumAccess && currentAgentCount >= 20) {
       toast.error("You have reached the limit of free agents. Please upgrade to premium.");
       setOpenDialog(false);
       return;
@@ -84,8 +84,8 @@ function CreateAgentSection() {
     
           <Button size={'lg'} onClick={() => {
    
-              if (!hasPremiumAccess && (userAgents?.length || 0) >= 2) {
-                 toast.error("Free limit reached (2 Agents). Upgrade to create more.");
+              if (!hasPremiumAccess && (userAgents?.length || 0) >= 20) {
+                 toast.error("Free limit reached (20 Agents). Upgrade to create more.");
               } else {
                  setOpenDialog(true);
               }

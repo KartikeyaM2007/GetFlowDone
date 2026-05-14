@@ -169,17 +169,29 @@ const PreviewAgent = () => {
 
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      <Header previewHeader={true} agentDetails={agentDetails}/>
+    <div className="h-screen flex flex-col overflow-hidden relative">
+      {/* Premium sticky header */}
+      <div className="relative z-20">
+        <Header previewHeader={true} agentDetails={agentDetails}/>
+      </div>
 
-
-      <div className='flex-1 grid grid-cols-4 gap-4 p-4 overflow-hidden'>
-        {/* Workflow Preview */}
-        <div className='col-span-3 border rounded-lg shadow-sm bg-white flex flex-col overflow-hidden'>
-          <div className='p-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50'>
-            <h2 className='font-semibold text-lg text-gray-800'>Workflow Preview</h2>
-            <p className='text-sm text-gray-600 mt-1'>Visual representation of your agent workflow</p>
+      <div className='flex-1 grid grid-cols-4 gap-5 p-5 overflow-hidden relative z-10'>
+        {/* Workflow Preview Frame */}
+        <div className='col-span-3 glass-cyber rounded-2xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] shadow-black/50 flex flex-col overflow-hidden group/preview transition-all duration-500 hover:border-[#00f2fe]/30'>
+          <div className='p-5 border-b border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent flex justify-between items-center'>
+            <div>
+              <h2 className='font-black text-xs tracking-[0.2em] uppercase text-white'>
+                📊 Live Workflow Visualizer
+              </h2>
+              <p className='text-[10px] font-mono text-gray-400 mt-1 font-semibold'>
+                Compiled execution path simulation
+              </p>
+            </div>
+            <span className="text-[10px] font-mono font-bold text-[#00f2fe] bg-[#00f2fe]/5 px-2.5 py-1 border border-[#00f2fe]/10 rounded-full uppercase tracking-widest opacity-80">
+              Read-Only Preview
+            </span>
           </div>
+          
           <div className='flex-1 relative'>
             <ReactFlow
               nodes={agentDetails?.node || []}
@@ -192,42 +204,58 @@ const PreviewAgent = () => {
               panOnDrag={true}
               zoomOnScroll={true}
               zoomOnPinch={true}
+              proOptions={{ hideAttribution: true }}
             >
-              <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-              <Controls />
+              <Background 
+                variant={BackgroundVariant.Lines} 
+                gap={24} 
+                size={1} 
+                color="rgba(255, 255, 255, 0.04)" 
+                style={{ backgroundColor: '#000000' }} 
+              />
+              <Controls 
+                position="bottom-right"
+                className="!bg-black/95 !border-2 !border-[#00f2fe]/25 !rounded-xl !shadow-[0_0_30px_rgba(0,242,254,0.15)] !flex !flex-col !gap-1.5 !p-1 [&_button]:!bg-transparent [&_button]:!text-[#00f2fe] [&_svg]:!fill-[#00f2fe] [&_button]:!border-none hover:[&_button]:!bg-[#00f2fe]/20 [&_button]:!transition-all"
+              />
             </ReactFlow>
           </div>
         </div>
 
-
-        {/* Chat UI */}
-        <div className="col-span-1 border rounded-lg shadow-sm bg-white flex flex-col overflow-hidden">
-          <div className='p-4 border-b bg-gradient-to-r from-green-50 to-emerald-50'>
-            <h2 className='font-semibold text-lg text-gray-800'>Test Agent</h2>
-            <p className='text-sm text-gray-600 mt-1'>Try your workflow</p>
+        {/* Simulator Console UI */}
+        <div className="col-span-1 glass-cyber rounded-2xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] shadow-black/50 flex flex-col overflow-hidden group/chat transition-all duration-500 hover:border-[#00f2fe]/30">
+          <div className='p-5 border-b border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent'>
+            <h2 className='font-black text-xs tracking-[0.2em] uppercase text-[#00f2fe] flex items-center gap-2'>
+              <span className="w-1.5 h-1.5 bg-[#00f2fe] rounded-full animate-ping" />
+              💬 Dynamic Agent Sandbox
+            </h2>
+            <p className='text-[10px] font-mono text-gray-400 mt-1 font-semibold'>
+              Simulate production chat inputs
+            </p>
           </div>
           
           {!agentDetails?.agentToolConfig && (
-            <div className="p-4 border-b bg-amber-50">
+            <div className="p-4 border-b border-amber-500/10 bg-amber-500/[0.02]">
               <Button 
                 onClick={GenerateAgentConfig}
                 disabled={loading}
-                className='w-full'
+                className='w-full bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 hover:text-amber-300 font-black uppercase tracking-wider text-xs h-10'
               >
                 <RefreshCcwIcon className={`mr-2 h-4 w-4 ${loading && 'animate-spin'}`} />
-                {loading ? 'Loading Agent...' : 'Load Agent'}
+                {loading ? 'SYNCHRONIZING...' : 'COMPILE RUNTIME'}
               </Button>
-              <p className='text-xs text-amber-700 mt-2 text-center'>
-                Click to prepare the agent for testing
+              <p className='text-[10px] font-semibold font-mono text-amber-500/70 mt-2 text-center uppercase tracking-widest'>
+                Workspace requires runtime compilation
               </p>
             </div>
           )}
           
-          <ChatUi 
-            agentDetails={agentDetails} 
-            onReloadAgent={GenerateAgentConfig}
-            isReloading={loading}
-          />
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <ChatUi 
+              agentDetails={agentDetails} 
+              onReloadAgent={GenerateAgentConfig}
+              isReloading={loading}
+            />
+          </div>
         </div>
       </div>
     </div>

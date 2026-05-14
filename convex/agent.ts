@@ -136,3 +136,13 @@ export const ClearMessages = mutation({
         return { success: true };
     }
 })
+
+export const DeleteAgent = mutation({
+    args: {
+        id: v.id('AgentTable')
+    },
+    handler: async (ctx, args) => {
+        await ctx.db.delete(args.id);
+        return { success: true };
+    }
+});
