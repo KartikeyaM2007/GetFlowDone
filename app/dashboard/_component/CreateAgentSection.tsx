@@ -201,7 +201,7 @@ function CreateAgentSection() {
             </button>
           </DialogTrigger>
           
-          <DialogContent className="glass-cyber border border-white/10 text-white bg-black/95 max-w-md shadow-2xl shadow-black/80 p-6 rounded-3xl relative z-50">
+          <DialogContent className="glass-cyber border border-white/10 text-white bg-black/95 max-w-md shadow-2xl shadow-black/80 p-6 rounded-3xl">
             <DialogHeader className="border-b border-white/5 pb-4 mb-4">
               <DialogTitle className="font-black tracking-wider text-lg uppercase text-white flex items-center gap-2">
                 <Plus className="h-4 w-4 text-white" /> 
