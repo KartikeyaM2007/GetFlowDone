@@ -16,39 +16,52 @@ function Header({ agentDetails, previewHeader = false }: Props) {
 
   return (
     <>
-      <div className='w-full p-3 flex items-center justify-between'>
-        <div className='flex gap-2 items-center'>
-          <ChevronLeft className='h-8 w-8' />
-          <h2 className='text-xl'>{agentDetails?.name}</h2>
+      <div className="w-full bg-black/80 backdrop-blur-lg border-b border-white/10 text-white py-4 px-8 flex items-center justify-between sticky top-0 z-50 shadow-2xl shadow-black/40">
+        <div className="flex gap-4 items-center">
+          <Link href="/dashboard" className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white border border-transparent hover:border-white/10 transition-all">
+            <ChevronLeft className="h-6 w-6" />
+          </Link>
+          <div>
+            <h2 className="text-lg font-black tracking-wide bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              {agentDetails?.name || 'Untitled Workspace'}
+            </h2>
+            <span className="text-[10px] font-black font-mono text-[#00f2fe] uppercase tracking-widest opacity-80">
+              Agent Console
+            </span>
+          </div>
         </div>
-        <div className='flex items-center gap-3'>
+        
+        <div className="flex items-center gap-4">
           <Button 
-            variant={'ghost'} 
+            variant="outline"
             onClick={() => setIsCodeDialogOpen(true)}
+            className="bg-black/50 border border-white/15 text-gray-200 hover:text-white hover:bg-[#00f2fe]/5 hover:border-[#00f2fe]/60 font-bold uppercase tracking-wider text-xs h-10 px-5 rounded-lg shadow-lg shadow-black/30 hover:shadow-[0_0_20px_rgba(0,242,254,0.15)]"
           >
-            <Code2 className='mr-2 h-4 w-4' />
-            Code
+            <Code2 className="mr-2 h-4 w-4 text-[#00f2fe]" />
+            Export Config
           </Button>
 
           {!previewHeader && (
             <Link href={`/agent/${agentDetails?.agentId}/preview`}>
-              <Button>
-                <Play className='mr-2 h-4 w-4' />
-                Preview
+              <Button className="bg-black/50 border border-white/15 text-gray-200 hover:text-white hover:bg-[#a855f7]/5 hover:border-[#a855f7]/60 font-bold uppercase tracking-wider text-xs h-10 px-5 rounded-lg shadow-lg shadow-black/30 hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]">
+                <Play className="mr-2 h-4 w-4 text-[#a855f7]" />
+                Preview Pipeline
               </Button>
             </Link>
           )}
 
           {previewHeader && (
             <Link href={`/agent/${agentDetails?.agentId}`}>
-              <Button variant={'outline'}>
-                <X className='mr-2 h-4 w-4' />
-                Close Preview
+              <Button className="bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 font-bold uppercase tracking-wider text-xs h-10 px-5 rounded-lg">
+                <X className="mr-2 h-4 w-4" />
+                Exit Preview
               </Button>
             </Link>
           )}
 
-          <Button>Publish</Button>
+          <Button className="bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black font-black uppercase tracking-wider text-xs h-10 px-6 rounded-lg shadow-[0_0_20px_rgba(0,242,254,0.3)] hover:shadow-[0_0_30px_rgba(0,242,254,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 border-none">
+            Publish Agent
+          </Button>
         </div>
       </div>
 

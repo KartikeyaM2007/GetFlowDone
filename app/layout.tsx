@@ -12,9 +12,9 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Ai agent Builder Platform",
+  title: "GetFlowDone | Intelligent Visual Agent Builder",
   description:
-    "The platform to build AI agent applications by simply drag and drop.",
+    "The ultimate platform to build, chain, and deploy intelligent AI agent workflows with infinite visual pipelines.",
 };
 
 export default function RootLayout({

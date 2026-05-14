@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation'
 import Header from '../_components/Header'
 import { ReactFlow, applyNodeChanges, applyEdgeChanges, addEdge, Background, BackgroundVariant, MiniMap, Controls, Panel } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { cn } from '@/lib/utils'
 import StartNodes from '../_customNodes/StartNodes';
 import AgentNode from '../_customNodes/AgentNode';
 import EndNode from '../_customNodes/EndNodes';
@@ -31,6 +32,15 @@ export const nodeTypes = {
   ApprovalNode: ApprovalNode,
   ApiNode: ApiNode,
 }
+
+const defaultEdgeOptions = {
+  animated: true,
+  style: { 
+    stroke: 'oklch(0.72 0.25 205)', 
+    strokeWidth: 2.5,
+    filter: 'drop-shadow(0px 0px 5px oklch(0.72 0.25 205 / 0.5))'
+  },
+};
 
 function AgentBuilder() {
   const {addedNode, setAddedNode, nodeEdges, setNodeEdges,selectedNode, setSelectedNode} = useContext(WorkflowContext);
@@ -187,7 +197,7 @@ function AgentBuilder() {
   return (
     <div>
       <Header agentDetails={agentDetails}/>
-      <div style={{ width: '100vw', height: '90vh' }}>
+      <div className="relative bg-[#030303]" style={{ width: '100vw', height: '90vh' }}>
         <ReactFlow
           nodes={addedNode || []}
           edges={nodeEdges || []}
@@ -196,76 +206,69 @@ function AgentBuilder() {
           onConnect={onConnect}
           fitView
           nodeTypes={nodeTypes}
+          defaultEdgeOptions={defaultEdgeOptions}
+          proOptions={{ hideAttribution: true }}
         >
-          <MiniMap />
-          <Controls/>
-          <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-          <Panel position='top-left'>
-            <AgentToolsPanel/>
+          <Controls 
+            position="bottom-right"
+            className="!bg-black/95 !border-2 !border-[#00f2fe]/25 !rounded-xl !shadow-[0_0_30px_rgba(0,242,254,0.15)] !flex !flex-col !gap-1.5 !p-1 [&_button]:!bg-transparent [&_button]:!text-[#00f2fe] [&_svg]:!fill-[#00f2fe] [&_button]:!border-none hover:[&_button]:!bg-[#00f2fe]/20 [&_button]:!transition-all"
+          />
+          <Background variant={BackgroundVariant.Lines} gap={24} size={1} color="rgba(0, 242, 254, 0.04)" style={{ backgroundColor: '#000000' }} />
+          <Panel position="top-left" className="!flex !flex-col !gap-4 !m-0 !h-[calc(90vh-30px)] !pointer-events-none justify-between">
+            <div className="!pointer-events-auto shrink-0">
+              <AgentToolsPanel />
+            </div>
+            <div className="!pointer-events-auto shrink-0">
+              <MiniMap 
+                position="bottom-left"
+                className="!relative !left-0 !bottom-0 !m-0 !bg-black/90 !border-2 !border-[#00f2fe]/25 !rounded-xl !shadow-[0_0_30px_rgba(0,242,254,0.15)] !w-[200px] !h-[120px]" 
+                maskColor="rgba(0, 242, 254, 0.08)"
+                nodeColor={(n: any) => {
+                  if (n.type === 'AgentNode') return '#00f2fe';
+                  if (n.type === 'EndNode') return '#ef4444';
+                  if (n.type === 'StartNodes') return '#22c55e';
+                  if (n.type === 'IfElseNode') return '#f97316';
+                  if (n.type === 'WhileNode') return '#a855f7';
+                  if (n.type === 'ApprovalNode') return '#eab308';
+                  if (n.type === 'ApiNode') return '#3b82f6';
+                  return '#333';
+                }}
+                nodeStrokeColor="transparent"
+                nodeBorderRadius={8}
+              />
+            </div>
           </Panel>
           <Panel position='top-right'>
             <SettingPanel/>
           </Panel>
           <Panel position='top-center'>
-            <div style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center',
-              gap: '12px',
-              background: 'white',
-              padding: '8px 16px',
-              borderRadius: '10px',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-              border: '1px solid #e5e7eb'
-            }}>
+            <div className="glass-cyber rounded-2xl px-6 py-3 flex items-center gap-5 shadow-[0_0_30px_rgba(0,242,254,0.15)]">
               <button 
                 onClick={SaveNodesAndEdges}
                 disabled={isSaving || !hasUnsavedChanges}
-                style={{
-                  padding: '10px 24px',
-                  background: hasUnsavedChanges ? '#3b82f6' : '#f3f4f6',
-                  color: hasUnsavedChanges ? 'white' : '#9ca3af',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: (isSaving || !hasUnsavedChanges) ? 'not-allowed' : 'pointer',
-                  fontWeight: '600',
-                  fontSize: '14px',
-                }}
+                className={cn(
+                  "px-6 py-2.5 rounded-full font-black text-xs tracking-wider uppercase transition-all duration-300",
+                  hasUnsavedChanges 
+                    ? "bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black shadow-[0_0_15px_rgba(0,242,254,0.4)] cursor-pointer hover:-translate-y-0.5 active:translate-y-0" 
+                    : "bg-white/5 text-gray-500 border border-white/5 cursor-not-allowed"
+                )}
               >
-                {isSaving ? 'Saving...' : 'Save Workflow'}
+                {isSaving ? 'SYNCING...' : 'SAVE WORKFLOW'}
               </button>
               
               {hasUnsavedChanges && !isSaving && (
-                <span style={{ 
-                  color: '#f59e0b',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}>
-                  <span style={{ 
-                    width: '6px', 
-                    height: '6px', 
-                    background: '#f59e0b', 
-                    borderRadius: '50%',
-                  }}></span>
-                  Unsaved changes
+                <span className="text-amber-400 text-xs font-bold tracking-wider uppercase flex items-center gap-2 animate-pulse">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b]" />
+                  UNSAVED
                 </span>
               )}
               
               {!hasUnsavedChanges && !isInitialLoad && !isSaving && (
-                <span style={{ 
-                  color: '#10b981',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M13.5 4.5L6 12L2.5 8.5" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <span className="text-emerald-400 text-xs font-bold tracking-wider uppercase flex items-center gap-2">
+                  <svg className="w-4 h-4 text-emerald-400 drop-shadow-[0_0_4px_#34d399]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
-                  All changes saved
+                  SYNCED
                 </span>
               )}
             </div>

@@ -1,18 +1,23 @@
 import React from 'react'
 import { Handle, Position } from '@xyflow/react'
-import { MousePointer2, Pointer } from 'lucide-react'
+import { MousePointer2 } from 'lucide-react'
 
 const AgentNode = () => {
-
-
   return (
-    <div className = "bg-white rounded-2xl px-4 p-3 border border-gray-200 shadow-md  hover:shadow-lg cursor-pointer" >
-        <div className = "flex gap-2 items-center">
-            <MousePointer2 className='p-2 rounded-lg h-8 w-8 bg-green-100'/>
-            <h2>Agent</h2>
-            <Handle type='target' position={Position.Left} />
-            <Handle type='source' position={Position.Right} />
+    <div className="relative bg-black/90 backdrop-blur-xl rounded-xl px-5 py-3 border-2 border-[#00f2fe]/40 text-white hover:border-[#00f2fe] transition-all duration-300 hover:scale-105 shadow-[0_0_25px_rgba(0,242,254,0.12)] cursor-pointer min-w-[180px] group">
+      <div className="absolute -inset-0.5 bg-gradient-to-r from-[#00f2fe]/20 to-[#4facfe]/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-300 -z-10" />
+      
+      <div className="flex gap-3 items-center">
+        <div className="w-9 h-9 rounded-lg bg-[#00f2fe]/10 border border-[#00f2fe]/30 flex items-center justify-center text-[#00f2fe] shadow-[0_0_10px_rgba(0,242,254,0.2)]">
+          <MousePointer2 className="h-4.5 w-4.5"/>
         </div>
+        <div>
+          <h2 className="text-[9px] font-black font-mono uppercase tracking-[0.2em] text-[#00f2fe]">AI Worker</h2>
+          <h3 className="text-xs font-extrabold font-sans tracking-wide text-gray-100 mt-0.5">Gemini Agent</h3>
+        </div>
+        <Handle type='target' position={Position.Left} className="!w-3.5 !h-3.5 !bg-black !border-2 !border-[#00f2fe] !shadow-[0_0_6px_#00f2fe] hover:scale-125 transition-transform" />
+        <Handle type='source' position={Position.Right} className="!w-3.5 !h-3.5 !bg-black !border-2 !border-[#00f2fe] !shadow-[0_0_6px_#00f2fe] hover:scale-125 transition-transform" />
+      </div>
     </div>
   )
 }

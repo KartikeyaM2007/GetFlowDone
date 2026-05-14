@@ -48,7 +48,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <Image src={"/logo.svg"} alt="Logo" width={35} height={35} />
-          {open && <h2 className="text-lg font-bold">AgentFlow</h2>}
+          {open && <h2 className="text-lg font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-[#00f2fe] to-[#4facfe] tracking-wider">GetFlowDone</h2>}
         </div>
       </SidebarHeader>
       <SidebarContent>

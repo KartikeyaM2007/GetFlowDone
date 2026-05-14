@@ -34,7 +34,7 @@ const SettingPanel = () => {
     }
 
     return selectedNode && (
-        <div className='p-5 bg-white rounded-lg shadow-md w-[350px]'>
+        <div className="glass-cyber border-2 border-[#00f2fe]/20 rounded-2xl shadow-[0_0_40px_rgba(0,242,254,0.15)] p-6 w-[380px] text-white">
             {selectedNode?.type == 'EndNode' && <EndSettings 
                 selectedNode={selectedNode}
                 updatedFormData={(value: any) => onUpdateNodeData(value)}

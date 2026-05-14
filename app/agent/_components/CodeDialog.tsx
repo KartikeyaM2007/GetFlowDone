@@ -140,7 +140,7 @@ getAgentConfig().then(config => {
   return (
     <>
       <Dialog open={isOpen && !showLanguageDialog} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl h-[700px] flex flex-col">
+        <DialogContent className="max-w-4xl h-[700px] flex flex-col bg-[#050505] border-[#00f2fe]/20 text-white shadow-[0_0_50px_rgba(0,0,0,0.8)]">
           <DialogHeader>
             <DialogTitle>Integrate Agent in Your Project</DialogTitle>
             <DialogDescription>
@@ -191,7 +191,7 @@ getAgentConfig().then(config => {
       </Dialog>
 
       <Dialog open={showLanguageDialog} onOpenChange={setShowLanguageDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-[#050505] border-[#00f2fe]/20 text-white shadow-[0_0_50px_rgba(0,0,0,0.8)]">
           <DialogHeader>
             <DialogTitle>Choose Your Language</DialogTitle>
             <DialogDescription>
