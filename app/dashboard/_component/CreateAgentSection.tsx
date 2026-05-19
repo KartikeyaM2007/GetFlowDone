@@ -98,7 +98,7 @@ function CreateAgentSection() {
     const toastId = 'ai-gen';
 
     try {
-      toast.loading("🔮 AI Command Received. Compiling workflow schema...", { id: toastId });
+      toast.loading("AI command received. Compiling workflow schema...", { id: toastId });
       
       const genResponse = await axios.post('/api/prompt-to-workflow', {
         prompt: aiPrompt
@@ -124,7 +124,7 @@ function CreateAgentSection() {
         edges: edges
       });
 
-      toast.success("💥 Pipeline manifested in database! Redirecting...", { id: toastId });
+      toast.success("Pipeline created in the database. Redirecting...", { id: toastId });
       route.push('/agent/' + agentId);
     } catch (error: any) {
       console.error("Generative failure:", error);
@@ -136,12 +136,12 @@ function CreateAgentSection() {
 
   return (
     <div className='flex flex-col justify-center items-center mt-20 px-4 w-full max-w-4xl mx-auto' >
-      <div className="flex items-center gap-2 mb-2 bg-[#00f2fe]/5 border border-[#00f2fe]/10 px-4 py-1.5 rounded-full animate-pulse">
-        <Sparkles className="h-3.5 w-3.5 text-[#00f2fe]" />
-        <span className="text-[10px] font-black font-mono uppercase tracking-widest text-[#00f2fe]">AI Generative Command Center</span>
+      <div className="flex items-center gap-2 mb-2 bg-[#111111]/5 border border-[#111111]/10 px-4 py-1.5 rounded-full animate-pulse">
+        <Sparkles className="h-3.5 w-3.5 text-[#111111]" />
+        <span className="text-[10px] font-black font-mono uppercase tracking-widest text-[#111111]">AI Generative Command Center</span>
       </div>
 
-      <h2 className='font-extrabold text-4xl md:text-5xl tracking-tight text-white text-center uppercase font-mono bg-gradient-to-r from-[#00f2fe] via-blue-400 to-[#4facfe] bg-clip-text text-transparent mb-2' >
+      <h2 className='font-extrabold text-4xl md:text-5xl tracking-tight text-white text-center uppercase font-mono bg-gradient-to-r from-[#111111] via-blue-400 to-[#111111] bg-clip-text text-transparent mb-2' >
         Design Flow Instantaneously
       </h2>
       <p className='text-gray-500 text-xs md:text-sm font-mono tracking-wider uppercase text-center mb-10 max-w-xl'>
@@ -153,21 +153,21 @@ function CreateAgentSection() {
         onSubmit={handleManifestWorkflow} 
         className="w-full max-w-2xl relative group"
       >
-        <div className="absolute -inset-1 bg-gradient-to-r from-[#00f2fe] to-[#a855f7] rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+        <div className="absolute -inset-1 bg-gradient-to-r from-[#111111] to-[#4b5563] rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
         
-        <div className="relative flex items-center bg-black/80 border border-white/10 rounded-2xl p-2 shadow-2xl backdrop-blur-xl focus-within:border-[#00f2fe]/40 transition-all w-full">
+        <div className="relative flex items-center bg-black/80 border border-white/10 rounded-2xl p-2 shadow-2xl backdrop-blur-xl focus-within:border-[#111111]/40 transition-all w-full">
           <input 
             type="text"
             value={aiPrompt}
             disabled={loader}
             onChange={(e) => setAiPrompt(e.target.value)}
-            placeholder="🔮 e.g., 'Fetch weather of Mumbai, check if >30C, then email me'"
+            placeholder="e.g., Fetch weather of Mumbai, check if >30C, then email me"
             className="flex-1 bg-transparent text-white placeholder:text-gray-600 outline-none border-none px-4 font-medium text-sm md:text-base"
           />
           <Button 
             type="submit"
             disabled={loader || !aiPrompt.trim()}
-            className="bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black font-black tracking-wider uppercase text-xs px-6 h-12 rounded-xl hover:shadow-[0_0_20px_rgba(0,242,254,0.4)] cursor-pointer transition-all duration-300 shrink-0 border-none"
+            className="bg-gradient-to-r from-[#111111] to-[#111111] text-black font-black tracking-wider uppercase text-xs px-6 h-12 rounded-xl hover:shadow-[0_0_20px_rgba(17,17,17,0.4)] cursor-pointer transition-all duration-300 shrink-0 border-none"
           >
             {loader ? (
               <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
@@ -195,7 +195,7 @@ function CreateAgentSection() {
                    setOpenDialog(true);
                 }
               }}
-              className="text-xs font-bold tracking-wider uppercase text-gray-400 hover:text-[#00f2fe] transition-all flex items-center gap-1.5 cursor-pointer bg-transparent border-none focus:outline-none"
+              className="text-xs font-bold tracking-wider uppercase text-gray-400 hover:text-[#111111] transition-all flex items-center gap-1.5 cursor-pointer bg-transparent border-none focus:outline-none"
             >
               <Plus className="h-3 w-3" /> Deploy Manual Grid
             </button>
@@ -208,7 +208,7 @@ function CreateAgentSection() {
                 Manual Grid Setup
               </DialogTitle>
               <DialogDescription className="text-gray-500 text-[10px] font-mono">
-                Launch an pristine empty workspace and drag-n-drop custom logic manually.
+                Launch a pristine empty workspace and drag-and-drop custom logic manually.
               </DialogDescription>
             </DialogHeader>
 
@@ -218,7 +218,7 @@ function CreateAgentSection() {
                 placeholder='e.g. Supply Chain Optimizer' 
                 value={agentName}
                 onChange={(e) => setAgentName(e.target.value)} 
-                className="bg-black/50 border border-white/10 rounded-xl h-12 text-white focus:border-[#00f2fe]/50 placeholder:text-gray-700 transition-all shadow-inner font-medium text-sm"
+                className="bg-black/50 border border-white/10 rounded-xl h-12 text-white focus:border-[#111111]/50 placeholder:text-gray-700 transition-all shadow-inner font-medium text-sm"
               />
             </div>
 
@@ -242,4 +242,4 @@ function CreateAgentSection() {
   )
 }
 
-export default CreateAgentSection
+export default CreateAgentSection

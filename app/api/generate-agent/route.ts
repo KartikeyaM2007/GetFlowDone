@@ -2,6 +2,66 @@
 import { geminiModel } from "@/config/GeminiModel";
 import { NextRequest, NextResponse } from "next/server";
 
+const hasUsableSecret = (value?: string) => {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase();
+  return !['', 'your-key-here', 'api-key', 'apikey', 'your_api_key', 'openweather_api_key', '{apikey}', '{apikey}', '{api_key}', '{apiKey}'.toLowerCase()].includes(normalized);
+};
+
+const collectDynamicParameters = (tool: any) => {
+  const parameters: Record<string, string> = { ...(tool?.parameters || {}) };
+
+  (tool?.queryParams || []).forEach((param: any) => {
+    if (!param?.isDynamic) return;
+    const placeholder = String(param.value || '').match(/\{([A-Za-z0-9_.-]+)\}/)?.[1];
+    parameters[placeholder || param.name] = 'string';
+  });
+
+  (tool?.headerParams || []).forEach((param: any) => {
+    const placeholder = String(param.value || '').match(/\{([A-Za-z0-9_.-]+)\}/)?.[1];
+    if (placeholder) parameters[placeholder] = 'string';
+  });
+
+  const bodyPlaceholders = String(tool?.bodyParams || '').match(/\{([A-Za-z0-9_.-]+)\}/g) || [];
+  bodyPlaceholders.forEach((match) => {
+    parameters[match.slice(1, -1)] = 'string';
+  });
+
+  return parameters;
+};
+
+const normalizeGeneratedTool = (tool: any) => {
+  const name = String(tool?.name || '').toLowerCase();
+  const url = String(tool?.url || '').toLowerCase();
+  const isWeatherTool = name.includes('weather') || url.includes('openweathermap.org');
+  const needsMissingWeatherKey = isWeatherTool && (!hasUsableSecret(tool?.apiKey) || String(tool?.apiKey || '').includes('{'));
+
+  if (!needsMissingWeatherKey) {
+    return {
+      ...tool,
+      parameters: collectDynamicParameters(tool),
+    };
+  }
+
+  return {
+    ...tool,
+    name: tool?.name || 'Weather Data Fetcher',
+    description: 'Fetches current weather data for a city or location without requiring an API key.',
+    method: 'GET',
+    url: 'https://wttr.in/{location}',
+    includeApiKey: false,
+    apiKey: '',
+    apiKeyParamName: '',
+    apiKeyLocation: 'query',
+    queryParams: [
+      { name: 'format', value: 'j1', description: 'Return structured JSON weather data', isDynamic: false },
+      { name: 'location', value: '{location}', description: 'City or location from the user message', isDynamic: true }
+    ],
+    headerParams: [],
+    parameters: { location: 'string' },
+  };
+};
+
 export async function POST(req: NextRequest) {
   const PROMPT = `From this workflow configuration, generate an agent instruction prompt with all details along with tools and settings in JSON format.
 
@@ -240,6 +300,15 @@ Example bad instruction:
 IMPORTANT: Generate instructions based SOLELY on what is configured in the workflow. Do NOT assume or add restrictions that are not explicitly defined.
 
 Workflow to convert:
+The provided flow items are normalized as:
+{
+  id,
+  type,
+  label,
+  settings,
+  next
+}
+Use node.settings directly for ApiNode/AgentNode/IfElseNode details.
 `;
 
   let payloadConfig: any = null;
@@ -278,10 +347,12 @@ Workflow to convert:
       parsedJson.tools = [];
     }
 
+    parsedJson.tools = parsedJson.tools.map(normalizeGeneratedTool);
+
     return NextResponse.json(parsedJson);
 
   } catch (error: any) {
-    console.error("⚠️ Generate-Agent compilation interruption. Launching Emergency Native JS Compiler:", error);
+    console.error("Generate-Agent compilation interruption. Launching emergency native JS compiler:", error);
     
     const agents: any[] = [];
     const tools: any[] = [];
@@ -293,28 +364,21 @@ Workflow to convert:
           if (!node) return;
 
           if (node.type === 'AgentNode') {
+            const settings = node.settings || node.data?.settings || {};
             agents.push({
               id: node.id,
-              name: node.data?.settings?.name || node.data?.label || "LLM Agent",
+              name: settings.name || node.label || node.data?.label || "LLM Agent",
               model: "gemini-2.0-flash-exp",
               includeHistory: true,
-              instruction: node.data?.settings?.instruction || "Analyze user parameters and trigger necessary tools."
+              instruction: settings.instruction || "Analyze user parameters and trigger necessary tools."
             });
           } else if (node.type === 'ApiNode') {
-            const settings = node.data?.settings || {};
+            const settings = node.settings || node.data?.settings || {};
             const queryParams = settings.queryParams || [];
-            const parameters: Record<string, string> = {};
-            
-            // Map local dynamic fields to machine settings
-            queryParams.forEach((param: any) => {
-              if (param.isDynamic && param.name) {
-                parameters[param.name] = "string";
-              }
-            });
 
-            tools.push({
+            tools.push(normalizeGeneratedTool({
               id: node.id,
-              name: settings.name || node.data?.label || "Workflow Endpoint",
+              name: settings.name || node.label || node.data?.label || "Workflow Endpoint",
               description: `Execute operational network call to URL: ${settings.url || 'local'}`,
               method: settings.method || "GET",
               url: settings.url || "",
@@ -325,15 +389,15 @@ Workflow to convert:
               queryParams: queryParams,
               headerParams: settings.headerParams || [],
               bodyParams: settings.bodyParams || "",
-              parameters: parameters,
+              parameters: {},
               assignedAgent: "agent-id"
-            });
+            }));
           } else if (node.type === 'IfElseNode') {
             conditions.push({
               id: node.id,
               type: "IfElseNode",
-              description: node.data?.label || "Flow Logic Branch",
-              condition: node.data?.settings?.condition || "true"
+              description: node.label || node.data?.label || "Flow Logic Branch",
+              condition: node.settings?.condition || node.data?.settings?.condition || "true"
             });
           }
         });
@@ -359,11 +423,11 @@ Workflow to convert:
         isNativeCompiled: true
       };
 
-      console.log("✅ Native compilation successful! Served manifest payload.");
+      console.log("Native compilation successful. Served manifest payload.");
       return NextResponse.json(nativeCompiledPayload);
 
     } catch (nestedError: any) {
-      console.error("❌ Fatal compiler failure:", nestedError);
+      console.error("Fatal compiler failure:", nestedError);
       return NextResponse.json(
         { 
           error: "Critically failed to compile agent configuration", 

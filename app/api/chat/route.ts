@@ -3,6 +3,105 @@ import { NextRequest, NextResponse } from "next/server";
 import { createChatSession } from "@/config/GeminiModel";
 import axios from 'axios';
 
+const actionWords = [
+  'fetch', 'find', 'search', 'send', 'email', 'export', 'download', 'generate',
+  'create', 'summarize', 'analyze', 'tailor', 'rewrite', 'optimize', 'run', 'get'
+];
+
+function looksActionable(message: string) {
+  const normalized = String(message || '').toLowerCase();
+  return actionWords.some((word) => normalized.includes(word));
+}
+
+function inferToolParams(tool: any, message: string) {
+  const inferredParams: Record<string, string> = {};
+
+  Object.keys(tool?.parameters || {}).forEach((key) => {
+    inferredParams[key] = message;
+  });
+
+  (tool?.queryParams || []).forEach((param: any) => {
+    const placeholder = String(param?.value || '').match(/\{([A-Za-z0-9_.-]+)\}/)?.[1];
+    if (param?.isDynamic && placeholder && !inferredParams[placeholder]) {
+      inferredParams[placeholder] = message;
+    }
+  });
+
+  const bodyPlaceholders = String(tool?.bodyParams || '').match(/\{([A-Za-z0-9_.-]+)\}/g) || [];
+  bodyPlaceholders.forEach((match) => {
+    const key = match.slice(1, -1);
+    if (!inferredParams[key]) {
+      inferredParams[key] = message;
+    }
+  });
+
+  if (Object.keys(inferredParams).length === 0) {
+    inferredParams.input = message;
+    inferredParams.query = message;
+    inferredParams.topic = message;
+    inferredParams.location = message;
+  }
+
+  return inferredParams;
+}
+
+function parseToolCall(text: string) {
+  try {
+    let cleanedResponse = String(text || '').trim();
+    const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      cleanedResponse = jsonMatch[0];
+    }
+
+    const parsed = JSON.parse(cleanedResponse);
+    return parsed?.useTool ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+async function executeWorkflowTool(tool: any, parameters: Record<string, string>) {
+  const toolResponse = await axios.post(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/execute-tool`, {
+    tool,
+    params: parameters
+  });
+
+  return toolResponse.data;
+}
+
+function findWorkflowTool(agentConfig: any, toolCall: any) {
+  let tool = agentConfig.tools?.find((t: any) => t.id === toolCall.toolId);
+  if (!tool && toolCall.toolName) {
+    tool = agentConfig.tools?.find((t: any) => t.name === toolCall.toolName);
+  }
+  return tool;
+}
+
+function rawToolResponse(toolName: string, toolResult: any) {
+  if (!toolResult?.success) {
+    return `Tool execution failed: ${toolResult?.error || 'Unknown error'}`;
+  }
+
+  const fallbackNote = toolResult.fallback
+    ? `\n\nFallback mode: ${toolResult.fallback}.`
+    : '';
+
+  return `Workflow tool "${toolName}" executed successfully.${fallbackNote}\n\nRaw node output:\n\`\`\`json\n${JSON.stringify(toolResult.data, null, 2)}\n\`\`\``;
+}
+
+async function formatToolResult(chat: any, tool: any, toolResult: any, userMessage: string) {
+  try {
+    const finalResult = await chat.sendMessage(
+      `The workflow tool "${tool.name}" returned this data: ${JSON.stringify(toolResult.data, null, 2)}.\n\nUser request: ${userMessage}\n\nIf another available tool must run next, respond only with the JSON tool block for that next tool. Otherwise provide a helpful natural language response. If this was a sandbox fallback, clearly say it was prepared locally and not actually delivered.`
+    );
+    const finalResponse = await finalResult.response;
+    return finalResponse.text();
+  } catch (finalError: any) {
+    console.error('Gemini formatting failed, fallback to raw output:', finalError);
+    return rawToolResponse(tool.name, toolResult);
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { message, agentId, agentConfig, conversationHistory } = await req.json();
@@ -68,19 +167,35 @@ export async function POST(req: NextRequest) {
       const response = await result.response;
       agentResponse = response.text();
     } catch (geminiError: any) {
-      console.error('⚠️ Upstream Gemini Error:', geminiError);
+      console.error('Upstream Gemini Error:', geminiError);
+
+      const fallbackTool = looksActionable(message) ? agentConfig.tools?.[0] : null;
+      if (fallbackTool) {
+        try {
+          const inferredParams = inferToolParams(fallbackTool, message);
+          const toolResult = await executeWorkflowTool(fallbackTool, inferredParams);
+
+          return NextResponse.json({
+            response: rawToolResponse(fallbackTool.name, toolResult),
+            toolResult,
+            timestamp: Date.now()
+          });
+        } catch (fallbackError: any) {
+          console.error('Deterministic fallback execution failed:', fallbackError);
+        }
+      }
       
       // Handle specific safety blocks or missing text
       if (geminiError.message?.includes('SAFETY') || geminiError.message?.includes('blocked')) {
         return NextResponse.json({
-          response: "🔒 Upstream Security Alert: The AI model's content safety filter was triggered. Please rephrase your prompt to comply with safety policies.",
+          response: "Upstream security alert: The AI model's content safety filter was triggered. Please rephrase your prompt to comply with safety policies.",
           toolResult: null,
           timestamp: Date.now()
         });
       }
 
       return NextResponse.json({
-        response: `🛑 Gemini AI Orchestration Failed: ${geminiError.message || 'Unknown model response error.'}. Please verify your workspace limits and prompt structure.`,
+        response: `Gemini AI orchestration failed: ${geminiError.message || 'Unknown model response error.'}. Please verify your workspace limits and prompt structure.`,
         toolResult: null,
         timestamp: Date.now()
       });
@@ -92,25 +207,17 @@ export async function POST(req: NextRequest) {
     let usedTool = false;
 
     try {
-      let cleanedResponse = agentResponse.trim();
-      
-      const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        cleanedResponse = jsonMatch[0];
+      const parsed = parseToolCall(agentResponse);
+      if (!parsed) {
+        throw new Error('No tool call JSON found');
       }
-
-      const parsed = JSON.parse(cleanedResponse);
       console.log(' Parsed tool call:', parsed);
 
       if (parsed.useTool) {
         usedTool = true;
         console.log(' Agent wants to use tool');
 
-        let tool = agentConfig.tools?.find((t: any) => t.id === parsed.toolId);
-        if (!tool && parsed.toolName) {
-          tool = agentConfig.tools?.find((t: any) => t.name === parsed.toolName);
-          console.log(' Found tool by name instead of ID');
-        }
+        const tool = findWorkflowTool(agentConfig, parsed);
         
         if (!tool) {
           console.error(' Tool not found:', parsed.toolId || parsed.toolName);
@@ -121,12 +228,7 @@ export async function POST(req: NextRequest) {
           console.log('Calling tool with params:', parsed.parameters);
 
           try {
-            const toolResponse = await axios.post(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/execute-tool`, {
-              tool: tool,
-              params: parsed.parameters
-            });
-
-            toolResult = toolResponse.data;
+            toolResult = await executeWorkflowTool(tool, parsed.parameters || {});
             console.log('Tool execution result:', toolResult);
 
             if (!toolResult.success) {
@@ -160,16 +262,23 @@ export async function POST(req: NextRequest) {
                 agentResponse = `I cannot proceed because the condition is not met: ${conditionMessage}`;
               } else {
                
-                try {
-                  const finalResult = await chat.sendMessage(
-                    `The tool "${tool.name}" returned this data: ${JSON.stringify(toolResult.data, null, 2)}.\n\nPlease provide a helpful, natural language response to the user based on this data. Format it in a friendly, conversational way and include all relevant details from the response.`
-                  );
-                  const finalResponse = await finalResult.response;
-                  agentResponse = finalResponse.text();
-                  console.log('Final formatted response:', agentResponse);
-                } catch (finalError: any) {
-                  console.error('⚠️ Gemini formatting failed, fallback to raw output:', finalError);
-                  agentResponse = `🤖 Visual Workflow executed successfully!\n\n📊 **Raw Node Output:**\n\`\`\`json\n${JSON.stringify(toolResult.data, null, 2)}\n\`\`\``;
+                agentResponse = await formatToolResult(chat, tool, toolResult, message);
+                console.log('Final formatted response:', agentResponse);
+
+                const chainedToolCall = parseToolCall(agentResponse);
+                if (chainedToolCall) {
+                  const chainedTool = findWorkflowTool(agentConfig, chainedToolCall);
+                  if (chainedTool) {
+                    console.log('Executing chained workflow tool:', chainedTool.name);
+                    const chainedParams = {
+                      ...(parsed.parameters || {}),
+                      ...(chainedToolCall.parameters || {}),
+                    };
+                    toolResult = await executeWorkflowTool(chainedTool, chainedParams);
+                    agentResponse = toolResult.success
+                      ? await formatToolResult(chat, chainedTool, toolResult, message)
+                      : rawToolResponse(chainedTool.name, toolResult);
+                  }
                 }
               }
             }
@@ -184,6 +293,32 @@ export async function POST(req: NextRequest) {
       if (usedTool) {
         console.error(' JSON parsing failed for tool call:', parseError);
         console.error('Response was:', agentResponse);
+      }
+
+      const fallbackTool = looksActionable(message) ? agentConfig.tools?.[0] : null;
+
+      if (fallbackTool) {
+        try {
+          const inferredParams = inferToolParams(fallbackTool, message);
+          toolResult = await executeWorkflowTool(fallbackTool, inferredParams);
+
+          if (toolResult.success) {
+            try {
+              const finalResult = await chat.sendMessage(
+                `The workflow tool "${fallbackTool.name}" ran with this result: ${JSON.stringify(toolResult.data, null, 2)}.\n\nAnswer the user's request directly and clearly. If this was a sandbox fallback, say what was prepared or simulated and why.`
+              );
+              const finalResponse = await finalResult.response;
+              agentResponse = finalResponse.text();
+            } catch (formatError) {
+              console.error('Fallback formatting failed:', formatError);
+              agentResponse = rawToolResponse(fallbackTool.name, toolResult);
+            }
+          } else {
+            agentResponse = rawToolResponse(fallbackTool.name, toolResult);
+          }
+        } catch (fallbackError) {
+          console.error('Fallback tool execution failed:', fallbackError);
+        }
       }
     }
 

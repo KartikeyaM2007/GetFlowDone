@@ -3,7 +3,7 @@ import React from 'react'
 const StartNode = () => {
   return (
     <div>
-        <h2 className='flex justify-center items-center font-black text-sm uppercase tracking-widest text-[#00f2fe] font-mono py-4'>
+        <h2 className='flex justify-center items-center font-black text-sm uppercase tracking-widest text-[#111111] font-mono py-4'>
            🚀 Start Node Selected
         </h2>
         <p className="text-xs text-gray-400 text-center leading-relaxed">

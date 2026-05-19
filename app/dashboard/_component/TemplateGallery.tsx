@@ -23,8 +23,8 @@ import {
 const PreBuiltTemplates = [
   {
     id: 'hn-scholar',
-    title: 'AI Knowledge Hub Harvester',
-    desc: 'Fetch real-time tech data from HackerNews API, summarize key trends via LLM, and dispatch a briefing newsletter.',
+    title: 'Hacker News Briefing',
+    desc: 'Search Hacker News, summarize the useful links, and prepare an email briefing. Sends only when Resend credentials are configured.',
     icon: Globe,
     color: '#f97316',
     tag: 'DATA PIPELINE',
@@ -40,7 +40,8 @@ const PreBuiltTemplates = [
             name: 'Algolia Search API', 
             method: 'GET', 
             url: 'https://hn.algolia.com/api/v1/search',
-            queryParams: [{ name: 'query', value: 'artificial intelligence', description: 'Keyword topics', isDynamic: true }] 
+            includeApiKey: false,
+            queryParams: [{ name: 'query', value: '{topic}', description: 'Keyword or topic to research', isDynamic: true }] 
           } 
         } 
       },
@@ -52,7 +53,7 @@ const PreBuiltTemplates = [
           label: 'Summarize Lessons', 
           settings: { 
             name: 'Gemini Reviewer', 
-            instruction: 'Extract the top 10 highest quality courses from the raw JSON. Format title, channel, and 1-sentence takeaway.' 
+            instruction: 'Extract the 10 most useful Hacker News results from the raw JSON. Format each item with title, author, URL, points, and a one-sentence takeaway.' 
           } 
         } 
       },
@@ -65,23 +66,31 @@ const PreBuiltTemplates = [
           settings: { 
             name: 'Send Email API', 
             method: 'POST', 
-            url: 'https://api.resend.com/emails' 
+            url: 'https://api.resend.com/emails',
+            includeApiKey: false,
+            bodyParams: JSON.stringify({
+              to: '{email}',
+              subject: 'Hacker News briefing from AgentFlow',
+              html: '{summary}'
+            }),
+            queryParams: [],
+            headerParams: []
           } 
         } 
       },
       { id: 'end-node', type: 'EndNode', position: { x: 1140, y: 200 }, data: { label: 'Delivered' } },
     ],
     edges: [
-      { id: 'e1', source: 'start', target: 'hn-fetch', animated: true, style: { stroke: '#00f2fe' } },
-      { id: 'e2', source: 'hn-fetch', target: 'gemini-rank', animated: true, style: { stroke: '#00f2fe' } },
-      { id: 'e3', source: 'gemini-rank', target: 'email-dispatch', animated: true, style: { stroke: '#00f2fe' } },
-      { id: 'e4', source: 'email-dispatch', target: 'end-node', animated: true, style: { stroke: '#00f2fe' } },
+      { id: 'e1', source: 'start', target: 'hn-fetch', animated: true, style: { stroke: 'var(--theme-accent)' } },
+      { id: 'e2', source: 'hn-fetch', target: 'gemini-rank', animated: true, style: { stroke: 'var(--theme-accent)' } },
+      { id: 'e3', source: 'gemini-rank', target: 'email-dispatch', animated: true, style: { stroke: 'var(--theme-accent)' } },
+      { id: 'e4', source: 'email-dispatch', target: 'end-node', animated: true, style: { stroke: 'var(--theme-accent)' } },
     ]
   },
   {
     id: 'inbox-defender',
-    title: 'Smart Automated Inbox Responder',
-    desc: 'Analyzes support emails via LLM. High confidence drafts are auto-sent; ambiguous inquiries trigger Human Approval.',
+    title: 'Support Reply Triage',
+    desc: 'Draft support replies, route high-confidence responses automatically, and hold uncertain replies for review.',
     icon: Mail,
     color: '#eab308',
     tag: 'AUTONOMOUS OPS',
@@ -95,7 +104,7 @@ const PreBuiltTemplates = [
           label: 'Draft Response', 
           settings: { 
             name: 'Inbox Assistant', 
-            instruction: 'Analyze tone and construct a premium resolution draft. Output confidence score.' 
+            instruction: 'Read the incoming support message, draft a clear reply, and output a confidence score between 0 and 1 plus the draft text.' 
           } 
         } 
       },
@@ -109,29 +118,29 @@ const PreBuiltTemplates = [
         } 
       },
       // Auto Dispatch Route (TRUE)
-      { id: 'auto-send', type: 'ApiNode', position: { x: 840, y: 100 }, data: { label: 'Auto Resend API', settings: { method: 'POST' } } },
+      { id: 'auto-send', type: 'ApiNode', position: { x: 840, y: 100 }, data: { label: 'Auto Email Send', settings: { name: 'Auto Email Dispatch', method: 'POST', url: 'https://api.resend.com/emails', includeApiKey: false, bodyParams: '{"to":"{email}","subject":"Support response","html":"{draft}"}', queryParams: [], headerParams: [] } } },
       { id: 'end-true', type: 'EndNode', position: { x: 1120, y: 100 }, data: { label: 'Auto Replied' } },
       // Human Review Route (FALSE)
       { id: 'human-verify', type: 'ApprovalNode', position: { x: 840, y: 400 }, data: { label: 'Review Needed', settings: { name: 'Human Manager', message: 'Review draft before dispatching.' } } },
-      { id: 'manual-send', type: 'ApiNode', position: { x: 1120, y: 400 }, data: { label: 'Deliver Approved', settings: { method: 'POST' } } },
+      { id: 'manual-send', type: 'ApiNode', position: { x: 1120, y: 400 }, data: { label: 'Send Approved Reply', settings: { name: 'Approved Email Dispatch', method: 'POST', url: 'https://api.resend.com/emails', includeApiKey: false, bodyParams: '{"to":"{email}","subject":"Approved support response","html":"{draft}"}', queryParams: [], headerParams: [] } } },
       { id: 'end-false', type: 'EndNode', position: { x: 1400, y: 400 }, data: { label: 'Manually Replied' } },
     ],
     edges: [
-      { id: 'e1', source: 'start', target: 'llm-draft', animated: true, style: { stroke: '#00f2fe' } },
-      { id: 'e2', source: 'llm-draft', target: 'logic-gate', animated: true, style: { stroke: '#00f2fe' } },
+      { id: 'e1', source: 'start', target: 'llm-draft', animated: true, style: { stroke: 'var(--theme-accent)' } },
+      { id: 'e2', source: 'llm-draft', target: 'logic-gate', animated: true, style: { stroke: 'var(--theme-accent)' } },
       // True Path
       { id: 'e-true', source: 'logic-gate', sourceHandle: 'true', target: 'auto-send', animated: true, style: { stroke: '#22c55e' } },
-      { id: 'e-t-end', source: 'auto-send', target: 'end-true', animated: true, style: { stroke: '#00f2fe' } },
+      { id: 'e-t-end', source: 'auto-send', target: 'end-true', animated: true, style: { stroke: 'var(--theme-accent)' } },
       // False Path
       { id: 'e-false', source: 'logic-gate', sourceHandle: 'false', target: 'human-verify', animated: true, style: { stroke: '#ef4444' } },
-      { id: 'e-f-rev', source: 'human-verify', target: 'manual-send', animated: true, style: { stroke: '#00f2fe' } },
-      { id: 'e-f-end', source: 'manual-send', target: 'end-false', animated: true, style: { stroke: '#00f2fe' } },
+      { id: 'e-f-rev', source: 'human-verify', target: 'manual-send', animated: true, style: { stroke: 'var(--theme-accent)' } },
+      { id: 'e-f-end', source: 'manual-send', target: 'end-false', animated: true, style: { stroke: 'var(--theme-accent)' } },
     ]
   },
   {
     id: 'resume-tailor',
-    title: 'Resume Auto-Tailor & Exporter',
-    desc: 'Submit a Job Description, automatically rewrite experience bullets to match JD keywords, and trigger a PDF download.',
+    title: 'Resume Tailor',
+    desc: 'Turn a resume and job description into targeted bullets, then create a downloadable document payload.',
     icon: FileText,
     color: '#3b82f6',
     tag: 'PRODUCTIVITY',
@@ -170,17 +179,25 @@ const PreBuiltTemplates = [
           settings: { 
             name: 'CV Exporter API', 
             method: 'POST', 
-            url: 'https://api.resume-generator.com/v1/build' 
+            url: 'https://api.resume-generator.com/v1/build',
+            includeApiKey: false,
+            bodyParams: JSON.stringify({
+              jobDescription: '{jobDescription}',
+              resume: '{resume}',
+              optimizedBullets: '{optimizedBullets}'
+            }),
+            queryParams: [],
+            headerParams: []
           } 
         } 
       },
       { id: 'end-node', type: 'EndNode', position: { x: 1140, y: 200 }, data: { label: 'Ready to Download' } },
     ],
     edges: [
-      { id: 'e1', source: 'start', target: 'jd-scan', animated: true, style: { stroke: '#00f2fe' } },
-      { id: 'e2', source: 'jd-scan', target: 'cv-rewrite', animated: true, style: { stroke: '#00f2fe' } },
-      { id: 'e3', source: 'cv-rewrite', target: 'pdf-gen', animated: true, style: { stroke: '#00f2fe' } },
-      { id: 'e4', source: 'pdf-gen', target: 'end-node', animated: true, style: { stroke: '#00f2fe' } },
+      { id: 'e1', source: 'start', target: 'jd-scan', animated: true, style: { stroke: 'var(--theme-accent)' } },
+      { id: 'e2', source: 'jd-scan', target: 'cv-rewrite', animated: true, style: { stroke: 'var(--theme-accent)' } },
+      { id: 'e3', source: 'cv-rewrite', target: 'pdf-gen', animated: true, style: { stroke: 'var(--theme-accent)' } },
+      { id: 'e4', source: 'pdf-gen', target: 'end-node', animated: true, style: { stroke: 'var(--theme-accent)' } },
     ]
   }
 ];
@@ -264,7 +281,7 @@ export default function TemplateGallery() {
           return (
             <div 
               key={t.id}
-              className="glass-cyber p-6 rounded-2xl border border-white/10 hover:border-[#00f2fe]/30 flex flex-col justify-between relative overflow-hidden h-[280px] group shadow-[0_4px_25px_rgba(0,0,0,0.5)] transition-all duration-300"
+              className="glass-cyber p-6 rounded-2xl border border-white/10 hover:border-[#111111]/30 flex flex-col justify-between relative overflow-hidden h-[280px] group shadow-[0_4px_25px_rgba(0,0,0,0.5)] transition-all duration-300"
             >
               {/* Glowing corner backing */}
               <div 
@@ -283,7 +300,7 @@ export default function TemplateGallery() {
                   <t.icon className="h-5 w-5 opacity-60 group-hover:opacity-100 transition-all" style={{ color: t.color }} />
                 </div>
 
-                <h3 className="text-base font-black tracking-wide text-white group-hover:text-[#00f2fe] transition-colors mb-2 leading-tight">
+                <h3 className="text-base font-black tracking-wide text-white group-hover:text-[#111111] transition-colors mb-2 leading-tight">
                   {t.title}
                 </h3>
                 <p className="text-xs text-gray-400 leading-relaxed line-clamp-3 pr-2">
@@ -294,7 +311,7 @@ export default function TemplateGallery() {
               <div className="pt-4 mt-4 border-t border-white/5 flex items-center justify-between relative z-10">
                 {/* Micro Node Counter Visual */}
                 <div className="flex items-center gap-1.5 opacity-60">
-                  <GitMerge className="h-3.5 w-3.5 text-[#00f2fe]" />
+                  <GitMerge className="h-3.5 w-3.5 text-[#111111]" />
                   <span className="text-[10px] font-mono font-bold text-gray-400">
                     {t.nodes.length} Nodes
                   </span>
@@ -303,7 +320,7 @@ export default function TemplateGallery() {
                 <button
                   onClick={() => provisionFromTemplate(t)}
                   disabled={provisioningId !== null}
-                  className="flex items-center gap-2 text-[11px] font-black font-mono uppercase tracking-wider text-[#00f2fe] bg-[#00f2fe]/5 hover:bg-[#00f2fe]/15 border border-[#00f2fe]/20 hover:border-[#00f2fe]/60 px-4 py-2 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:shadow-[0_0_15px_rgba(0,242,254,0.2)]"
+                  className="flex items-center gap-2 text-[11px] font-black font-mono uppercase tracking-wider text-[#111111] bg-[#111111]/5 hover:bg-[#111111]/15 border border-[#111111]/20 hover:border-[#111111]/60 px-4 py-2 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:shadow-[0_0_15px_rgba(17,17,17,0.2)]"
                 >
                   {isDeploying ? (
                     <>

@@ -12,6 +12,8 @@ const SettingPanel = () => {
     const {selectedNode, setAddedNode} = useContext(WorkflowContext); 
 
     const onUpdateNodeData = (formData: any) => {
+        if (!selectedNode?.id) return;
+
         setAddedNode((prevNodes: any) => {
             return prevNodes.map((node: any) => {
                 if (node.id === selectedNode.id) {
@@ -34,7 +36,7 @@ const SettingPanel = () => {
     }
 
     return selectedNode && (
-        <div className="glass-cyber border-2 border-[#00f2fe]/20 rounded-2xl shadow-[0_0_40px_rgba(0,242,254,0.15)] p-6 w-[380px] text-white">
+        <div className="glass-cyber border-2 border-[#111111]/20 rounded-2xl shadow-[0_0_40px_rgba(17,17,17,0.15)] p-6 w-[380px] text-white">
             {selectedNode?.type == 'EndNode' && <EndSettings 
                 selectedNode={selectedNode}
                 updatedFormData={(value: any) => onUpdateNodeData(value)}

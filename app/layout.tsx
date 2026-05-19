@@ -1,15 +1,10 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "./ConvexClientProvider";
 import { ClerkProvider } from "@clerk/nextjs";
 import Provider from "./provider";
 import { Toaster } from "@/components/ui/sonner";
-
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
-});
+import ThemeToggle from "./ThemeToggle";
 
 export const metadata: Metadata = {
   title: "GetFlowDone | Intelligent Visual Agent Builder",
@@ -25,10 +20,11 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={`${outfit.variable} antialiased`}>
+        <body className="app-theme antialiased">
           <ConvexClientProvider>
             <Provider>
               <div suppressHydrationWarning>{children}</div>{" "}
+              <ThemeToggle />
               <Toaster/>
             </Provider>
           </ConvexClientProvider>

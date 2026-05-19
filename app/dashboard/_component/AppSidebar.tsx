@@ -41,14 +41,13 @@ export function AppSidebar() {
     userDetails?._id ? { userId: userDetails._id as Id<"UserTable"> } : "skip"
   );
   const agentCount = userAgents?.length || 0;
-  const isLimitReached = agentCount >= 20;
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <Image src={"/logo.svg"} alt="Logo" width={35} height={35} />
-          {open && <h2 className="text-lg font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-[#00f2fe] to-[#4facfe] tracking-wider">GetFlowDone</h2>}
+          {open && <h2 className="text-lg font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-[#111111] to-[#111111] tracking-wider">GetFlowDone</h2>}
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -85,8 +84,8 @@ export function AppSidebar() {
               )}
             </div>
             {open && (
-              <Button className="w-full" size="sm">
-                Upgrade to Premium
+              <Button className="w-full bg-black text-white hover:bg-neutral-800" size="sm" asChild>
+                <Link href="/dashboard/pricing">Upgrade to Premium</Link>
               </Button>
             )}
           </div>

@@ -10,11 +10,19 @@ CRITICAL RULES FOR OUTPUT:
 2. Provide absolute "x" and "y" position attributes to automatically lay out the node graph. Nodes should start at x: 50, y: 250 and increment sequentially from left-to-right (e.g., x increases by 280 per step) so they do not overlap.
 3. The graph MUST start with one "StartNodes" type node, and terminate with an "EndNode" type node.
 4. Keep it functional:
-   - Use "ApiNode" for network calls, GET/POST operations, or data fetching. Provide relevant mocked URLs (e.g., openweather, resend, stripe, discord webhooks) in their settings.
+   - Use "ApiNode" for network calls, GET/POST operations, or data fetching.
+   - Prefer public/no-key APIs when possible so the generated workflow can run immediately.
+   - Good no-key examples:
+     weather: https://wttr.in/{location}?format=j1
+     HackerNews search: https://hn.algolia.com/api/v1/search
+     generic facts/data: https://api.publicapis.org/entries or https://httpbin.org/anything
+   - Only use paid/private endpoints like Resend, Stripe, OpenWeather, or PDF services when the user explicitly asks for them; if credentials are needed, set includeApiKey=false unless the user provided a real key.
    - Use "AgentNode" for LLM/AI processing, analysis, and formatting tasks.
    - Use "IfElseNode" for logical condition testing if the user specifies choices/decisions.
    - Use "ApprovalNode" if the workflow implies human validation.
 5. Use standard UUID-like simple strings for node IDs (e.g., 'start', 'node-1', 'node-2', 'end-node').
+6. Create detailed workflows: include specific labels, dynamic parameter descriptions, agent instructions, and enough intermediate nodes to solve the user request accurately.
+7. For every ApiNode, define dynamic parameters with placeholder names that match the URL/query/body placeholders.
 
 REQUIRED JSON SCHEMA:
 {
@@ -53,7 +61,7 @@ REQUIRED JSON SCHEMA:
       "source": "source-node-id",
       "target": "target-node-id",
       "animated": true,
-      "style": { "stroke": "#00f2fe" },
+      "style": { "stroke": "#111111" },
       // If source is IfElseNode, specify:
       "sourceHandle": "true" | "false"
     }
@@ -105,18 +113,23 @@ User Prompt to Convert:
     });
 
   } catch (error: any) {
-    console.error("⚠️ Synthesizer Interruption. Deploying Keyword-Aware Emergency Fallback:", error);
+    console.error("Synthesizer interruption. Deploying keyword-aware emergency fallback:", error);
     
     // Parse user keywords to build an incredibly smart local manifest fallback
     const promptLower = (userPrompt || "").toLowerCase();
     let dynamicName = "Autonomous Visual Sequence";
     let customLabel = "Dynamic API Block";
     let customUrl = "https://api.example.com/v1/data";
+    let queryParams = [{ name: 'query', value: '{input}', description: 'Target Parameter', isDynamic: true }];
     
     if (promptLower.includes("weather")) {
       dynamicName = "Dynamic Weather Harvester";
-      customLabel = "OpenWeather Controller";
-      customUrl = "https://api.openweathermap.org/data/2.5/weather";
+      customLabel = "Weather Data Fetcher";
+      customUrl = "https://wttr.in/{location}";
+      queryParams = [
+        { name: 'format', value: 'j1', description: 'Return structured JSON weather data', isDynamic: false },
+        { name: 'location', value: '{location}', description: 'City or location from the user message', isDynamic: true }
+      ];
     } else if (promptLower.includes("email") || promptLower.includes("mail")) {
       dynamicName = "Intelligent Email Pipeline";
       customLabel = "Resend SMTP Relay";
@@ -144,7 +157,10 @@ User Prompt to Convert:
             name: customLabel, 
             method: 'GET', 
             url: customUrl,
-            queryParams: [{ name: 'query', value: '{input}', description: 'Target Parameter', isDynamic: true }] 
+            includeApiKey: false,
+            apiKey: '',
+            apiKeyLocation: 'query',
+            queryParams
           } 
         } 
       },
@@ -164,15 +180,15 @@ User Prompt to Convert:
     ];
     
     const fallbackEdges = [
-      { id: 'e1', source: 'start', target: 'api-fetch', animated: true, style: { stroke: '#00f2fe' } },
-      { id: 'e2', source: 'api-fetch', target: 'agent-review', animated: true, style: { stroke: '#00f2fe' } },
-      { id: 'e3', source: 'agent-review', target: 'end-gate', animated: true, style: { stroke: '#00f2fe' } }
+      { id: 'e1', source: 'start', target: 'api-fetch', animated: true, style: { stroke: 'var(--theme-accent)' } },
+      { id: 'e2', source: 'api-fetch', target: 'agent-review', animated: true, style: { stroke: 'var(--theme-accent)' } },
+      { id: 'e3', source: 'agent-review', target: 'end-gate', animated: true, style: { stroke: 'var(--theme-accent)' } }
     ];
 
     return NextResponse.json({
       success: true,
       isFallback: true,
-      workflowName: `🔮 AI: ${dynamicName}`,
+      workflowName: `AI: ${dynamicName}`,
       nodes: fallbackNodes,
       edges: fallbackEdges
     });

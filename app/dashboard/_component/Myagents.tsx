@@ -71,13 +71,13 @@ function Myagents() {
               <Link 
                 href={'/agent/'+a.agentId} 
                 key={a._id} 
-                className="relative group p-6 bg-black/50 border border-white/10 hover:border-[#00f2fe]/40 rounded-2xl mt-5 shadow-[0_4px_25px_rgba(0,0,0,0.6)] hover:shadow-[0_0_30px_rgba(0,242,254,0.12)] hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between h-48" 
+                className="relative group p-6 bg-black/50 border border-white/10 hover:border-[#111111]/40 rounded-2xl mt-5 shadow-[0_4px_25px_rgba(0,0,0,0.6)] hover:shadow-[0_0_30px_rgba(17,17,17,0.12)] hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between h-48" 
               >
-                  <div className="absolute -inset-px bg-gradient-to-r from-[#00f2fe]/10 to-[#4facfe]/10 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute -inset-px bg-gradient-to-r from-[#111111]/10 to-[#111111]/10 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity" />
                   
                   <div>
                     <div className="flex items-start justify-between mb-4">
-                      <div className="p-3 bg-[#00f2fe]/10 border border-[#00f2fe]/20 rounded-xl text-[#00f2fe] shadow-[0_0_12px_rgba(0,242,254,0.15)] group-hover:scale-105 group-hover:bg-[#00f2fe]/15 transition-all">
+                      <div className="p-3 bg-[#111111]/10 border border-[#111111]/20 rounded-xl text-[#111111] shadow-[0_0_12px_rgba(17,17,17,0.15)] group-hover:scale-105 group-hover:bg-[#111111]/15 transition-all">
                         <GitBranchIcon className="h-5 w-5 drop-shadow-[0_0_4px_currentColor]" />
                       </div>
                       
@@ -99,7 +99,7 @@ function Myagents() {
                     <h2 className="text-base font-black tracking-tight text-gray-100 group-hover:text-white transition-colors truncate pr-2">
                       {a.name || 'Untitled Agent'}
                     </h2>
-                    <span className="text-[8px] font-mono font-black uppercase tracking-[0.2em] text-[#00f2fe]/50 group-hover:text-[#00f2fe] transition-colors mt-1.5 block">
+                    <span className="text-[8px] font-mono font-black uppercase tracking-[0.2em] text-[#111111]/50 group-hover:text-[#111111] transition-colors mt-1.5 block">
                       SYSTEM_PIPELINE
                     </span>
                   </div>
@@ -108,7 +108,7 @@ function Myagents() {
                     <span className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-wider">
                       {moment(a._creationTime).fromNow()}
                     </span>
-                    <span className="text-[10px] font-black text-[#00f2fe] opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all font-mono uppercase tracking-widest">
+                    <span className="text-[10px] font-black text-[#111111] opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all font-mono uppercase tracking-widest">
                       Launch &rarr;
                     </span>
                   </div>

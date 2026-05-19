@@ -8,7 +8,7 @@ import { useConvex, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Agent } from '@/types/AgentType'
 import { toast } from 'sonner'
-import { ReactFlow, Background, BackgroundVariant, Controls } from '@xyflow/react';
+import { ReactFlow, Background, BackgroundVariant, Controls, useReactFlow } from '@xyflow/react';
 import { nodeTypes } from '../page';
 import { Button } from '@/components/ui/button';
 import { RefreshCcwIcon } from 'lucide-react';
@@ -16,6 +16,11 @@ import axios from 'axios';
 import ChatUi from './_components/ChatUi';
 import { Id } from '@/convex/_generated/dataModel';
 
+const previewEdgeStyle = {
+  stroke: 'var(--theme-accent)',
+  strokeWidth: 3.5,
+  filter: 'drop-shadow(0px 0px 6px var(--theme-shadow))',
+};
 
 const PreviewAgent = () => {
   const { agentId } = useParams()
@@ -25,6 +30,7 @@ const PreviewAgent = () => {
   const updateAgentConfig = useMutation(api.agent.UpdateAgentConfig)
   
   const convex = useConvex()
+  const { fitView } = useReactFlow();
 
 
   const GetAgentDetails = async () => {
@@ -53,6 +59,22 @@ const PreviewAgent = () => {
     }
   }, [agentDetails])
 
+  useEffect(() => {
+    if (agentDetails?.node?.length) {
+      const timeout = window.setTimeout(() => {
+        fitView({ padding: 0.25, duration: 500, maxZoom: 1 });
+      }, 150);
+
+      return () => window.clearTimeout(timeout);
+    }
+  }, [agentDetails?.node, fitView]);
+
+  useEffect(() => {
+    if (flowConfig && agentDetails && !agentDetails.agentToolConfig && !loading) {
+      GenerateAgentConfig();
+    }
+  }, [flowConfig, agentDetails?.agentToolConfig]);
+
 
   const GenerateWorkflow = () => {
     const edgeMap = agentDetails?.edge?.reduce((acc: any, edge: any) => {
@@ -69,8 +91,8 @@ const PreviewAgent = () => {
 
       switch (node.type) {
         case "IfElseNode": {
-          const ifEdge = connectedEdges.find((e: any) => e.sourceHandle === "if");
-          const elseEdge = connectedEdges.find((e: any) => e.sourceHandle === "else");
+          const ifEdge = connectedEdges.find((e: any) => e.sourceHandle === "if" || e.sourceHandle === "true");
+          const elseEdge = connectedEdges.find((e: any) => e.sourceHandle === "else" || e.sourceHandle === "false");
           next = {
             if: ifEdge?.target || null,
             else: elseEdge?.target || null,
@@ -123,7 +145,7 @@ const PreviewAgent = () => {
     };
 
 
-    console.log("🎯 Generated Workflow Config:", workflowConfig);
+    console.log("Generated Workflow Config:", workflowConfig);
     setFlowConfig(workflowConfig);
   }
 
@@ -175,27 +197,34 @@ const PreviewAgent = () => {
         <Header previewHeader={true} agentDetails={agentDetails}/>
       </div>
 
-      <div className='flex-1 grid grid-cols-4 gap-5 p-5 overflow-hidden relative z-10'>
+      <div className='workflow-screen flex-1 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-5 p-5 overflow-hidden relative z-10'>
         {/* Workflow Preview Frame */}
-        <div className='col-span-3 glass-cyber rounded-2xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] shadow-black/50 flex flex-col overflow-hidden group/preview transition-all duration-500 hover:border-[#00f2fe]/30'>
+        <div className='glass-cyber rounded-xl border border-white/10 shadow-xl flex flex-col overflow-hidden group/preview transition-all duration-500 hover:border-[#111111]/30 min-h-0'>
           <div className='p-5 border-b border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent flex justify-between items-center'>
             <div>
               <h2 className='font-black text-xs tracking-[0.2em] uppercase text-white'>
-                📊 Live Workflow Visualizer
+                Workflow Preview
               </h2>
               <p className='text-[10px] font-mono text-gray-400 mt-1 font-semibold'>
-                Compiled execution path simulation
+                Saved nodes and live execution path
               </p>
             </div>
-            <span className="text-[10px] font-mono font-bold text-[#00f2fe] bg-[#00f2fe]/5 px-2.5 py-1 border border-[#00f2fe]/10 rounded-full uppercase tracking-widest opacity-80">
-              Read-Only Preview
+            <span className="text-[10px] font-mono font-bold text-[#111111] bg-[#111111]/5 px-2.5 py-1 border border-[#111111]/10 rounded-full uppercase tracking-widest opacity-80">
+              Preview
             </span>
           </div>
           
           <div className='flex-1 relative'>
             <ReactFlow
               nodes={agentDetails?.node || []}
-              edges={agentDetails?.edge || []}
+              edges={(agentDetails?.edge || []).map((edge: any) => ({
+                ...edge,
+                animated: edge.animated ?? true,
+                style: {
+                  ...(edge.style || {}),
+                  ...previewEdgeStyle,
+                },
+              }))}
               fitView
               nodeTypes={nodeTypes}
               nodesDraggable={false}
@@ -204,32 +233,33 @@ const PreviewAgent = () => {
               panOnDrag={true}
               zoomOnScroll={true}
               zoomOnPinch={true}
+              fitViewOptions={{ padding: 0.25, maxZoom: 1 }}
               proOptions={{ hideAttribution: true }}
             >
               <Background 
                 variant={BackgroundVariant.Lines} 
                 gap={24} 
                 size={1} 
-                color="rgba(255, 255, 255, 0.04)" 
-                style={{ backgroundColor: '#000000' }} 
+                color="rgba(56, 189, 248, 0.16)" 
+                style={{ backgroundColor: 'var(--theme-bg)' }} 
               />
-              <Controls 
-                position="bottom-right"
-                className="!bg-black/95 !border-2 !border-[#00f2fe]/25 !rounded-xl !shadow-[0_0_30px_rgba(0,242,254,0.15)] !flex !flex-col !gap-1.5 !p-1 [&_button]:!bg-transparent [&_button]:!text-[#00f2fe] [&_svg]:!fill-[#00f2fe] [&_button]:!border-none hover:[&_button]:!bg-[#00f2fe]/20 [&_button]:!transition-all"
-              />
+            <Controls 
+              position="bottom-right"
+              className="!bg-[var(--theme-panel-solid)] !border !border-[var(--theme-border)] !rounded-lg !shadow-lg !flex !flex-col !gap-1 !p-1 [&_button]:!bg-transparent [&_button]:!text-[var(--theme-text)] [&_svg]:!fill-[var(--theme-text)] [&_button]:!border-none hover:[&_button]:!bg-[var(--theme-bg-soft)] [&_button]:!transition-all"
+            />
             </ReactFlow>
           </div>
         </div>
 
         {/* Simulator Console UI */}
-        <div className="col-span-1 glass-cyber rounded-2xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] shadow-black/50 flex flex-col overflow-hidden group/chat transition-all duration-500 hover:border-[#00f2fe]/30">
+        <div className="glass-cyber rounded-xl border border-white/10 shadow-xl flex flex-col overflow-hidden group/chat transition-all duration-500 hover:border-[#111111]/30 min-h-0">
           <div className='p-5 border-b border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent'>
-            <h2 className='font-black text-xs tracking-[0.2em] uppercase text-[#00f2fe] flex items-center gap-2'>
-              <span className="w-1.5 h-1.5 bg-[#00f2fe] rounded-full animate-ping" />
-              💬 Dynamic Agent Sandbox
+            <h2 className='font-black text-xs tracking-[0.2em] uppercase text-[#111111] flex items-center gap-2'>
+              <span className="w-1.5 h-1.5 bg-[#111111] rounded-full animate-ping" />
+              Workflow Chat
             </h2>
             <p className='text-[10px] font-mono text-gray-400 mt-1 font-semibold'>
-              Simulate production chat inputs
+              Test the workflow with real inputs
             </p>
           </div>
           
@@ -241,10 +271,10 @@ const PreviewAgent = () => {
                 className='w-full bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 hover:text-amber-300 font-black uppercase tracking-wider text-xs h-10'
               >
                 <RefreshCcwIcon className={`mr-2 h-4 w-4 ${loading && 'animate-spin'}`} />
-                {loading ? 'SYNCHRONIZING...' : 'COMPILE RUNTIME'}
+                {loading ? 'Syncing...' : 'Sync Workflow'}
               </Button>
               <p className='text-[10px] font-semibold font-mono text-amber-500/70 mt-2 text-center uppercase tracking-widest'>
-                Workspace requires runtime compilation
+                Sync once before testing
               </p>
             </div>
           )}

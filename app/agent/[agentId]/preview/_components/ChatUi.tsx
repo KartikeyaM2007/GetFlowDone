@@ -160,12 +160,12 @@ function ChatUi({ agentDetails, onReloadAgent, isReloading = false }: Props) {
           {agentDetails?.agentToolConfig ? (
             <span className='text-[10px] font-black font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full tracking-widest uppercase flex items-center gap-1.5 animate-pulse'>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]" />
-              Live Console
+              Ready
             </span>
           ) : (
             <span className='text-[10px] font-black font-mono text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full tracking-widest uppercase flex items-center gap-1.5'>
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-              Awaiting Config
+              Needs Sync
             </span>
           )}
         </div>
@@ -182,19 +182,19 @@ function ChatUi({ agentDetails, onReloadAgent, isReloading = false }: Props) {
       </div>
 
       {/* Interactive Stream Container */}
-      <div className='flex-1 p-4 overflow-y-auto space-y-4 relative z-10 scrollbar-thin scrollbar-thumb-[#00f2fe]/10'>
+      <div className='flex-1 p-4 overflow-y-auto space-y-4 relative z-10 scrollbar-thin scrollbar-thumb-[#111111]/10'>
         {messages.length === 0 ? (
-          <div className='h-full flex flex-col items-center justify-center text-center px-4 opacity-60 py-10'>
-            <div className='w-14 h-14 bg-[#00f2fe]/5 border-2 border-dashed border-[#00f2fe]/20 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse'>
-              <Send className='w-6 h-6 text-[#00f2fe]' />
+          <div className='h-full flex flex-col items-center justify-center text-center px-4 opacity-80 py-10'>
+            <div className='w-14 h-14 bg-[#111111]/5 border-2 border-dashed border-[#111111]/20 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse'>
+              <Send className='w-6 h-6 text-[#111111]' />
             </div>
-            <p className='text-white font-black text-sm uppercase tracking-wider mb-1'>Sandbox Active</p>
+            <p className='text-white font-black text-sm uppercase tracking-wider mb-1'>Test Chat Ready</p>
             <p className='text-gray-500 text-[11px] leading-relaxed'>
-              Initialize testing by submitting natural language inputs in the prompt gateway below.
+              Send a request and the workflow will run the configured tools.
             </p>
             {!agentDetails?.agentToolConfig && (
               <p className='text-amber-400 font-mono font-bold text-[10px] mt-4 border border-amber-400/20 bg-amber-400/5 px-3 py-1.5 rounded-lg uppercase tracking-widest'>
-                ⚡ Requires Workspace Sync
+                Sync Required
               </p>
             )}
           </div>
@@ -209,8 +209,8 @@ function ChatUi({ agentDetails, onReloadAgent, isReloading = false }: Props) {
                 <div 
                   className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-lg relative group/msg ${
                     msg.role === 'user' 
-                      ? 'bg-gradient-to-br from-[#00f2fe] to-[#4facfe] text-black font-extrabold rounded-tr-none shadow-[0_0_25px_rgba(0,242,254,0.2)]' 
-                      : 'bg-black/40 border border-white/10 text-white rounded-tl-none hover:border-[#00f2fe]/30 transition-all'
+                      ? 'bg-gradient-to-br from-[#111111] to-[#111111] text-black font-extrabold rounded-tr-none shadow-[0_0_25px_rgba(17,17,17,0.2)]' 
+                      : 'bg-black/40 border border-white/10 text-white rounded-tl-none hover:border-[#111111]/30 transition-all'
                   }`}
                 >
                   <p className='text-sm whitespace-pre-wrap font-medium leading-relaxed'>{msg.content}</p>
@@ -248,11 +248,11 @@ function ChatUi({ agentDetails, onReloadAgent, isReloading = false }: Props) {
           <div className='flex justify-start w-full animate-in fade-in'>
             <div className='bg-black/30 border border-white/10 rounded-2xl rounded-tl-none px-4 py-3 shadow-md flex gap-3 items-center'>
               <div className="flex space-x-1">
-                <div className="w-1.5 h-1.5 bg-[#00f2fe] rounded-full animate-bounce [animation-delay:-0.3s]" />
-                <div className="w-1.5 h-1.5 bg-[#00f2fe] rounded-full animate-bounce [animation-delay:-0.15s]" />
-                <div className="w-1.5 h-1.5 bg-[#00f2fe] rounded-full animate-bounce" />
+                <div className="w-1.5 h-1.5 bg-[#111111] rounded-full animate-bounce [animation-delay:-0.3s]" />
+                <div className="w-1.5 h-1.5 bg-[#111111] rounded-full animate-bounce [animation-delay:-0.15s]" />
+                <div className="w-1.5 h-1.5 bg-[#111111] rounded-full animate-bounce" />
               </div>
-              <span className='text-[10px] font-black font-mono text-[#00f2fe] uppercase tracking-widest'>Processing...</span>
+              <span className='text-[10px] font-black font-mono text-[#111111] uppercase tracking-widest'>Processing...</span>
             </div>
           </div>
         )}
@@ -266,23 +266,23 @@ function ChatUi({ agentDetails, onReloadAgent, isReloading = false }: Props) {
             className='mb-3 w-full py-2 rounded-lg flex items-center justify-center gap-2 text-[10px] font-black font-mono uppercase tracking-widest text-rose-400 bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/10 hover:border-rose-500/30 transition-all cursor-pointer'
           >
             <Trash2 className='h-3.5 w-3.5' />
-            Purge Sandbox Cache
+            Clear Chat
           </button>
         )}
         <div className='flex gap-3 relative items-center'>
           <input 
             type="text" 
-            placeholder={agentDetails?.agentToolConfig ? "Instruct Agent..." : "Compile runtime console..."}
+            placeholder={agentDetails?.agentToolConfig ? "Ask this workflow to do something..." : "Sync the workflow first..."}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-            className='flex-1 px-4 py-3 bg-black/60 border border-white/10 rounded-xl text-white text-sm placeholder:text-gray-600 placeholder:text-xs font-medium tracking-wide focus:outline-none focus:border-[#00f2fe]/50 focus:ring-1 focus:ring-[#00f2fe]/20 disabled:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50 transition-all pr-12 shadow-inner'
+            className='flex-1 px-4 py-3 bg-black/60 border border-white/10 rounded-xl text-white text-sm placeholder:text-gray-600 placeholder:text-xs font-medium tracking-wide focus:outline-none focus:border-[#111111]/50 focus:ring-1 focus:ring-[#111111]/20 disabled:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50 transition-all pr-12 shadow-inner'
             disabled={loading || !agentDetails?.agentToolConfig}
           />
           <button 
             onClick={sendMessage}
             disabled={!input.trim() || loading || !agentDetails?.agentToolConfig}
-            className='absolute right-2 top-2 bg-gradient-to-r from-[#00f2fe] to-[#4facfe] text-black p-2 rounded-lg transition-all duration-300 shadow-[0_0_15px_rgba(0,242,254,0.2)] hover:shadow-[0_0_25px_rgba(0,242,254,0.4)] hover:scale-105 disabled:opacity-40 disabled:scale-100 disabled:shadow-none cursor-pointer flex items-center justify-center h-8 w-8'
+            className='absolute right-2 top-2 bg-gradient-to-r from-[#111111] to-[#111111] text-black p-2 rounded-lg transition-all duration-300 shadow-[0_0_15px_rgba(17,17,17,0.2)] hover:shadow-[0_0_25px_rgba(17,17,17,0.4)] hover:scale-105 disabled:opacity-40 disabled:scale-100 disabled:shadow-none cursor-pointer flex items-center justify-center h-8 w-8'
           >
             {loading ? <Loader2 className='h-4 w-4 animate-spin' /> : <Send className='h-4 w-4 font-black' />}
           </button>
